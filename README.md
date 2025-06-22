@@ -312,54 +312,9 @@ The test suite includes:
 - **Session Management**: Secure user authentication with Devise
 - **Data Validation**: Comprehensive input validation and sanitization
 
-## 🚀 Deployment
-
-### Production Checklist
-- [ ] Configure production database with proper indexes
-- [ ] Set up background job processing (Sidekiq recommended)
-- [ ] Configure email delivery for notifications
-- [ ] Set up SSL certificate for secure payments
-- [ ] Configure monitoring and error tracking
-- [ ] Set up automated backups
-- [ ] Configure payment processor integration
-- [ ] Set up log rotation and monitoring
-
-### Recommended Architecture
-- **Application Server**: Puma with multiple workers
-- **Background Jobs**: Sidekiq with Redis
-- **Database**: PostgreSQL with read replicas
-- **Caching**: Redis for session and fragment caching
-- **Email**: SMTP service or transactional email provider
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with proper tests
-4. Run the test suite (`bundle exec rspec`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
-
-### Development Guidelines
-- Follow Rails conventions and best practices
-- Write comprehensive tests for new features
-- Update documentation for API changes
-- Use semantic commit messages
-- Ensure backward compatibility
-
 ## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support & Documentation
-
-For support and questions:
-- **Issues**: Create an issue in the repository
-- **Documentation**: Check `/docs` directory and inline code comments
-- **Examples**: Review test files for usage examples
-- **Models**: See `MODELS_README.md` for detailed model documentation
-- **License System**: See `LICENSE_EXPIRATION_SYSTEM.md` for expiration details
 
 ### Additional Resources
 - **API Documentation**: Available in controller comments
