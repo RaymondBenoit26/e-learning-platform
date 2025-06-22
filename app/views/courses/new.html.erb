@@ -1,0 +1,119 @@
+<% content_for :title, "New Course" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Courses", school_courses_path(@school) %></li>
+    <li class="breadcrumb-item active">New Course</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-plus"></i> Create New Course</h1>
+    <p class="text-muted">Add a new course to your school's curriculum</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Course Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @course], local: true, class: "row g-3" do |form| %>
+          <% if @course.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @course.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-12">
+            <%= form.label :name, class: "form-label" %>
+            <%= form.text_field :name, class: "form-control", placeholder: "e.g., Introduction to Programming" %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4, 
+                placeholder: "Describe what students will learn in this course..." %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :term_id, "Term (Optional)", class: "form-label" %>
+            <%= form.collection_select :term_id, @school.terms, :id, :name, 
+                { prompt: "Select a term (optional)" }, 
+                { class: "form-select" } %>
+            <div class="form-text">Assign this course to a specific academic term</div>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :price, "Course Price ($)", class: "form-label" %>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <%= form.number_field :price, class: "form-control", step: "0.01", min: "0", value: "0.00" %>
+            </div>
+            <div class="form-text">Set to 0 for free courses</div>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Create Course", class: "btn btn-primary" %>
+              <%= link_to "Cancel", school_courses_path(@school), class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Course Creation Tips</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled">
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Use clear, descriptive course names
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Include learning objectives in the description
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Add chapters and content after creating the course
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Terms help organize courses by semester
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-lightbulb"></i> What's Next?</h6>
+      </div>
+      <div class="card-body">
+        <p class="card-text small">After creating your course, you'll be able to:</p>
+        <ul class="small">
+          <li>Add chapters to organize content</li>
+          <li>Upload course materials</li>
+          <li>Assign instructors</li>
+          <li>Manage student enrollments</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 

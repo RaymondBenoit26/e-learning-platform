@@ -1,0 +1,213 @@
+<% content_for :title, "Terms" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item active">Terms</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1><i class="fas fa-calendar-alt"></i> Terms</h1>
+    <p class="text-muted mb-0">
+      <% if current_user.student? %>
+        Browse available academic terms for enrollment
+      <% else %>
+        Manage academic terms for <%= @school.name %>
+      <% end %>
+    </p>
+  </div>
+  
+  <% if current_user.management? %>
+    <%= link_to "Add Term", new_school_term_path(@school), class: "btn btn-primary" %>
+  <% end %>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= search_form_for @q, url: school_terms_path(@school), local: true, class: "row g-3" do |f| %>
+      <div class="col-md-4">
+        <%= f.label :name_cont, "Term Name", class: "form-label" %>
+        <%= f.search_field :name_cont, placeholder: "Search by term name...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-3">
+        <%= f.label :start_date_gteq, "Starting After", class: "form-label" %>
+        <%= f.date_field :start_date_gteq, class: "form-control" %>
+      </div>
+      
+      <div class="col-md-3">
+        <%= f.label :end_date_lteq, "Ending Before", class: "form-label" %>
+        <%= f.date_field :end_date_lteq, class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2 d-flex align-items-end">
+        <%= f.submit "Search", class: "btn btn-primary me-2" %>
+        <%= link_to "Clear", school_terms_path(@school), class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>
+          <% if current_user.student? %>
+            Available Terms for Enrollment
+          <% else %>
+            Academic Terms
+          <% end %>
+        </h5>
+      </div>
+      <div class="card-body">
+        <% if @terms.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Term Name</th>
+                  <th>Duration</th>
+                  <th>Status</th>
+                  <th>Courses</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @terms.each do |term| %>
+                  <tr>
+                    <td>
+                      <%= link_to term.name, [@school, term], class: "text-decoration-none" %>
+                      <% if term.description.present? %>
+                        <br>
+                        <small class="text-muted"><%= truncate(term.description, length: 50) %></small>
+                      <% end %>
+                    </td>
+                    <td>
+                      <%= term.start_date.strftime("%b %d") %> - <%= term.end_date.strftime("%b %d, %Y") %>
+                      <br>
+                      <small class="text-muted"><%= pluralize((term.end_date - term.start_date).to_i, 'day') %></small>
+                    </td>
+                    <td>
+                      <% if term.start_date > Date.current %>
+                        <span class="badge bg-info">Upcoming</span>
+                      <% elsif term.end_date < Date.current %>
+                        <span class="badge bg-secondary">Completed</span>
+                      <% else %>
+                        <span class="badge bg-success">Active</span>
+                      <% end %>
+                    </td>
+                    <td>
+                      <span class="badge bg-primary"><%= term.courses.count %></span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <%= link_to "View", [@school, term], class: "btn btn-outline-primary btn-sm" %>
+                        
+                        <% if current_user.student? %>
+                          <% if current_user.term_enrollments.where(enrollable: term).exists? %>
+                            <span class="btn btn-success btn-sm disabled">Enrolled</span>
+                          <% elsif term.status == 'upcoming' %>
+                            <%= link_to "Enroll", new_school_term_enrollment_path(@school, term), class: "btn btn-success btn-sm" %>
+                          <% end %>
+                        <% elsif current_user.management? %>
+                          <%= link_to "Edit", edit_school_term_path(@school, term), class: "btn btn-outline-secondary btn-sm" %>
+                          <%= link_to "Delete", [@school, term], 
+                              method: :delete,
+                              class: "btn btn-outline-danger btn-sm",
+                              data: { confirm: "Are you sure you want to delete this term?" } %>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-4">
+            <i class="fas fa-calendar-alt fa-3x text-muted mb-3"></i>
+            <h5>No Terms Yet</h5>
+            <p class="text-muted">
+              <% if current_user.student? %>
+                No academic terms are available for enrollment at this time.
+              <% else %>
+                No academic terms have been created yet.
+              <% end %>
+            </p>
+            <% if current_user.management? %>
+              <%= link_to "Create First Term", new_school_term_path(@school), class: "btn btn-primary" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Term Statistics -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6><i class="fas fa-chart-bar"></i> Term Statistics</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6">
+            <h4 class="text-primary"><%= @terms.count %></h4>
+            <small class="text-muted">Total Terms</small>
+          </div>
+          <div class="col-6">
+            <h4 class="text-success"><%= @terms.where('start_date <= ? AND end_date >= ?', Date.current, Date.current).count %></h4>
+            <small class="text-muted">Active</small>
+          </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row text-center">
+          <div class="col-6">
+            <h4 class="text-info"><%= @terms.where('start_date > ?', Date.current).count %></h4>
+            <small class="text-muted">Upcoming</small>
+          </div>
+          <div class="col-6">
+            <h4 class="text-warning"><%= @terms.sum { |t| t.courses.count } %></h4>
+            <small class="text-muted">Total Courses</small>
+          </div>
+        </div>
+        
+        <% if current_user.student? %>
+          <hr>
+          <div class="row text-center">
+            <div class="col-12">
+              <h4 class="text-success"><%= current_user.term_enrollments.count %></h4>
+              <small class="text-muted">My Term Enrollments</small>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-bolt"></i> Quick Actions</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <% if current_user.student? %>
+            <%= link_to "My Term Enrollments", enrollments_path(type: 'term'), class: "btn btn-primary btn-sm" %>
+            <%= link_to "Browse Courses", courses_path, class: "btn btn-outline-info btn-sm" %>
+          <% elsif current_user.management? %>
+            <%= link_to "Create New Term", new_school_term_path(@school), class: "btn btn-primary btn-sm" %>
+          <% end %>
+          <%= link_to "Back to School", school_path(@school), class: "btn btn-outline-secondary btn-sm" %>
+          <%= link_to "View All Courses", school_courses_path(@school), class: "btn btn-outline-info btn-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

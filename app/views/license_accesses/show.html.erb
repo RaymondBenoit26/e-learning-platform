@@ -1,0 +1,311 @@
+<% content_for :title, "License Details - #{@license_access.license.name}" %>
+
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">
+        <i class="fas fa-certificate"></i>
+        <%= @license_access.license.name %>
+      </h1>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><%= link_to "My Licenses", license_accesses_path %></li>
+          <li class="breadcrumb-item active" aria-current="page">License Details</li>
+        </ol>
+      </nav>
+    </div>
+    <div>
+      <span class="badge fs-6 <%= 'bg-success' if @license_access.active? %>
+                                <%= 'bg-warning' if @license_access.pending? %>
+                                <%= 'bg-danger' if @license_access.expired? || @license_access.cancelled? %>">
+        <%= @license_access.status.humanize %>
+      </span>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- License Information -->
+    <div class="col-md-8">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-info-circle"></i>
+            License Information
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <dl class="row">
+                <dt class="col-sm-4">License Name:</dt>
+                <dd class="col-sm-8"><%= @license_access.license.name %></dd>
+
+                <dt class="col-sm-4">Type:</dt>
+                <dd class="col-sm-8">
+                  <span class="badge bg-info">
+                    <%= @license_access.license.licensable_type %>
+                  </span>
+                </dd>
+
+                <dt class="col-sm-4">For:</dt>
+                <dd class="col-sm-8"><%= @license_access.license.licensable.name %></dd>
+
+                <dt class="col-sm-4">Status:</dt>
+                <dd class="col-sm-8">
+                  <span class="badge <%= 'bg-success' if @license_access.active? %>
+                                     <%= 'bg-warning' if @license_access.pending? %>
+                                     <%= 'bg-danger' if @license_access.expired? || @license_access.cancelled? %>">
+                    <%= @license_access.status.humanize %>
+                  </span>
+                </dd>
+              </dl>
+            </div>
+            
+            <div class="col-md-6">
+              <dl class="row">
+                <dt class="col-sm-4">Purchased:</dt>
+                <dd class="col-sm-8">
+                  <%= @license_access.purchased_at&.strftime("%B %d, %Y at %I:%M %p") || "N/A" %>
+                </dd>
+
+                <% if @license_access.expires_at %>
+                  <dt class="col-sm-4">Expires:</dt>
+                  <dd class="col-sm-8">
+                    <span class="<%= @license_access.expires_at > Time.current ? 'text-success' : 'text-danger' %>">
+                      <%= @license_access.expires_at.strftime("%B %d, %Y at %I:%M %p") %>
+                    </span>
+                  </dd>
+                <% else %>
+                  <dt class="col-sm-4">Expires:</dt>
+                  <dd class="col-sm-8">
+                    <span class="text-success">
+                      <i class="fas fa-infinity"></i> Lifetime Access
+                    </span>
+                  </dd>
+                <% end %>
+
+                <dt class="col-sm-4">License Type:</dt>
+                <dd class="col-sm-8">
+                  <span class="badge bg-secondary">
+                    <%= @license_access.license.license_type&.humanize || "Standard" %>
+                  </span>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Information -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-credit-card"></i>
+            Payment Information
+          </h5>
+        </div>
+        <div class="card-body">
+          <% if @payment %>
+            <div class="row">
+              <div class="col-md-6">
+                <dl class="row">
+                  <dt class="col-sm-5">Payment Method:</dt>
+                  <dd class="col-sm-7">
+                    <span class="badge bg-primary">
+                      <%= @license_access.payment_method_display %>
+                    </span>
+                  </dd>
+
+                  <dt class="col-sm-5">Amount Paid:</dt>
+                  <dd class="col-sm-7">
+                    <strong class="text-success">
+                      $<%= number_with_precision(@license_access.amount_paid, precision: 2) %>
+                    </strong>
+                  </dd>
+
+                  <dt class="col-sm-5">Payment Status:</dt>
+                  <dd class="col-sm-7">
+                    <span class="badge <%= 'bg-success' if @payment.completed? %>
+                                       <%= 'bg-warning' if @payment.pending? %>
+                                       <%= 'bg-danger' if @payment.failed? %>">
+                      <%= @payment.status.humanize %>
+                    </span>
+                  </dd>
+                </dl>
+              </div>
+              
+              <div class="col-md-6">
+                <dl class="row">
+                  <dt class="col-sm-5">Payment Date:</dt>
+                  <dd class="col-sm-7">
+                    <%= @payment.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                  </dd>
+
+                  <% if @payment.breakdown.present? %>
+                    <dt class="col-sm-5">Breakdown:</dt>
+                    <dd class="col-sm-7">
+                      <small class="text-muted">
+                        <%= @payment.breakdown_summary %>
+                      </small>
+                    </dd>
+                  <% end %>
+                </dl>
+              </div>
+            </div>
+          <% else %>
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i>
+              This license was provided without payment (free or complimentary access).
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Enrollment Information -->
+      <% if @enrollment %>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-user-graduate"></i>
+              Enrollment Information
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <dl class="row">
+                  <dt class="col-sm-5">Enrollment Type:</dt>
+                  <dd class="col-sm-7">
+                    <span class="badge bg-info">
+                      <%= @enrollment.enrollment_type.humanize %>
+                    </span>
+                  </dd>
+
+                  <dt class="col-sm-5">Enrollment Status:</dt>
+                  <dd class="col-sm-7">
+                    <span class="badge <%= 'bg-success' if @enrollment.active? %>
+                                       <%= 'bg-warning' if @enrollment.pending? %>
+                                       <%= 'bg-primary' if @enrollment.completed? %>
+                                       <%= 'bg-danger' if @enrollment.cancelled? || @enrollment.suspended? %>">
+                      <%= @enrollment.status.humanize %>
+                    </span>
+                  </dd>
+                </dl>
+              </div>
+              
+              <div class="col-md-6">
+                <dl class="row">
+                  <dt class="col-sm-5">Enrolled:</dt>
+                  <dd class="col-sm-7">
+                    <%= @enrollment.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                  </dd>
+
+                  <dt class="col-sm-5">Access Status:</dt>
+                  <dd class="col-sm-7">
+                    <% if @enrollment.has_valid_access? %>
+                      <span class="text-success">
+                        <i class="fas fa-check-circle"></i> Valid Access
+                      </span>
+                    <% else %>
+                      <span class="text-danger">
+                        <i class="fas fa-times-circle"></i> 
+                        <%= @enrollment.access_restriction_reason %>
+                      </span>
+                    <% end %>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% else %>
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle"></i>
+              No enrollment found for this license. This may occur if the license is pending payment confirmation.
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Actions Sidebar -->
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-cogs"></i>
+            Quick Actions
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <!-- View Content -->
+            <% if @license_access.license.licensable_type == "Term" %>
+              <%= link_to "View Term Content", 
+                          [@license_access.license.licensable.school, @license_access.license.licensable], 
+                          class: "btn btn-primary" %>
+            <% elsif @license_access.license.licensable_type == "Course" %>
+              <%= link_to "View Course Content", 
+                          [@license_access.license.licensable.school, @license_access.license.licensable], 
+                          class: "btn btn-primary" %>
+            <% end %>
+
+            <!-- My Enrollments -->
+            <%= link_to "My Enrollments", 
+                        enrollments_path, 
+                        class: "btn btn-outline-info" %>
+
+            <!-- Back to Licenses -->
+            <%= link_to "Back to My Licenses", 
+                        license_accesses_path, 
+                        class: "btn btn-outline-secondary" %>
+          </div>
+        </div>
+      </div>
+
+      <!-- License Statistics -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-chart-bar"></i>
+            License Usage
+          </h5>
+        </div>
+        <div class="card-body">
+          <% total_seats = @license_access.license.max_seats %>
+          <% used_seats = @license_access.license.license_accesses.active.count %>
+          <% available_seats = [total_seats - used_seats, 0].max %>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <span>Total Seats:</span>
+              <strong><%= total_seats %></strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Used Seats:</span>
+              <strong class="text-info"><%= used_seats %></strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span>Available:</span>
+              <strong class="text-success"><%= available_seats %></strong>
+            </div>
+          </div>
+          
+          <div class="progress" style="height: 20px;">
+            <div class="progress-bar bg-info" 
+                 role="progressbar" 
+                 style="width: <%= (used_seats.to_f / total_seats * 100).round(1) %>%"
+                 aria-valuenow="<%= used_seats %>" 
+                 aria-valuemin="0" 
+                 aria-valuemax="<%= total_seats %>">
+              <%= (used_seats.to_f / total_seats * 100).round(1) %>%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

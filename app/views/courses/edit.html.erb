@@ -1,0 +1,112 @@
+<% content_for :title, "Edit Course" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Courses", school_courses_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <li class="breadcrumb-item active">Edit</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-edit"></i> Edit Course</h1>
+    <p class="text-muted">Update course information and settings</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Course Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @course], local: true, class: "row g-3" do |form| %>
+          <% if @course.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @course.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-12">
+            <%= form.label :name, class: "form-label" %>
+            <%= form.text_field :name, class: "form-control" %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4 %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :term_id, "Term (Optional)", class: "form-label" %>
+            <%= form.collection_select :term_id, @school.terms, :id, :name, 
+                { prompt: "Select a term (optional)" }, 
+                { class: "form-select" } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :price, "Course Price ($)", class: "form-label" %>
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <%= form.number_field :price, class: "form-control", step: "0.01", min: "0" %>
+            </div>
+            <div class="form-text">Set to 0 for free courses</div>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Update Course", class: "btn btn-primary" %>
+              <%= link_to "Cancel", [@school, @course], class: "btn btn-outline-secondary" %>
+              <%= link_to "View Course", [@school, @course], class: "btn btn-outline-info" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-chart-bar"></i> Course Statistics</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6">
+            <h4 class="text-primary"><%= @course.students.count %></h4>
+            <small class="text-muted">Students</small>
+          </div>
+          <div class="col-6">
+            <h4 class="text-info"><%= @course.chapters.count %></h4>
+            <small class="text-muted">Chapters</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-cog"></i> Course Management</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <%= link_to "Add Chapter", new_school_course_chapter_path(@school, @course), 
+              class: "btn btn-outline-primary btn-sm" %>
+          <%= link_to "View Enrollments", enrollments_path(course_id: @course.id), 
+              class: "btn btn-outline-info btn-sm" %>
+          <%= link_to "Manage Content", [@school, @course], 
+              class: "btn btn-outline-secondary btn-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

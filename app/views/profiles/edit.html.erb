@@ -1,0 +1,129 @@
+<% content_for :title, "Edit Profile" %>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-user-edit"></i> Edit Profile</h1>
+    <p class="text-muted">Update your account information and settings</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Profile Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: @user, url: profile_path, method: :patch, local: true, class: "row g-3" do |form| %>
+          <% if @user.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @user.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-md-6">
+            <%= form.label :first_name, class: "form-label" %>
+            <%= form.text_field :first_name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :last_name, class: "form-label" %>
+            <%= form.text_field :last_name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :email, class: "form-label" %>
+            <%= form.email_field :email, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :phone, "Phone (Optional)", class: "form-label" %>
+            <%= form.telephone_field :phone, class: "form-control" %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :bio, "Bio (Optional)", class: "form-label" %>
+            <%= form.text_area :bio, class: "form-control", rows: 4,
+                placeholder: "Tell us a bit about yourself..." %>
+          </div>
+          
+          <div class="col-12">
+            <hr>
+            <h6>Change Password (Leave blank to keep current password)</h6>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :password, "New Password", class: "form-label" %>
+            <%= form.password_field :password, class: "form-control", autocomplete: "new-password" %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :password_confirmation, "Confirm Password", class: "form-label" %>
+            <%= form.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Update Profile", class: "btn btn-primary" %>
+              <%= link_to "Cancel", profile_path, class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Current Profile</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Name:</strong> <%= @user.full_name %></p>
+        <p><strong>Email:</strong> <%= @user.email %></p>
+        <p><strong>Role:</strong> <span class="badge bg-<%= @user.student? ? 'primary' : @user.instructor? ? 'success' : 'warning' %>"><%= @user.user_type.humanize %></span></p>
+        <p><strong>School:</strong> <%= current_school.name %></p>
+        <p><strong>Member Since:</strong> <%= @user.created_at.strftime("%B %Y") %></p>
+        
+        <% if @user.phone.present? %>
+          <p><strong>Phone:</strong> <%= @user.phone %></p>
+        <% end %>
+        
+        <% if @user.bio.present? %>
+          <hr>
+          <p><strong>Bio:</strong></p>
+          <p class="text-muted small"><%= @user.bio %></p>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-shield-alt"></i> Security Tips</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled small">
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Use a strong, unique password
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Keep your contact information updated
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Log out when using shared devices
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 

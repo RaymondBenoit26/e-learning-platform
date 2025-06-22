@@ -1,0 +1,100 @@
+<% content_for :title, "Edit Chapter" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Courses", school_courses_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <li class="breadcrumb-item active">Edit Chapter</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-edit"></i> Edit Chapter</h1>
+    <p class="text-muted">Update chapter information and organization</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Chapter Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @course, @chapter], local: true, class: "row g-3" do |form| %>
+          <% if @chapter.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @chapter.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-md-8">
+            <%= form.label :title, class: "form-label" %>
+            <%= form.text_field :title, class: "form-control" %>
+          </div>
+          
+          <div class="col-md-4">
+            <%= form.label :order, "Chapter Order", class: "form-label" %>
+            <%= form.number_field :order, class: "form-control", min: 1 %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4 %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Update Chapter", class: "btn btn-primary" %>
+              <%= link_to "Cancel", [@school, @course], class: "btn btn-outline-secondary" %>
+              <%= link_to "View Chapter", [@school, @course, @chapter], class: "btn btn-outline-info" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-list"></i> Chapter Contents</h6>
+      </div>
+      <div class="card-body">
+        <p class="card-text">
+          <strong>Current Resources:</strong> <%= @chapter.course_contents.count %>
+        </p>
+        
+        <% if @chapter.course_contents.any? %>
+          <% @chapter.course_contents.limit(3).each do |content| %>
+            <div class="small mb-2">
+              <i class="fas fa-<%= content.content_type == 'video' ? 'play' : 'file-alt' %>"></i>
+              <%= content.title %>
+            </div>
+          <% end %>
+          <% if @chapter.course_contents.count > 3 %>
+            <small class="text-muted">... and <%= @chapter.course_contents.count - 3 %> more</small>
+          <% end %>
+        <% else %>
+          <small class="text-muted">No content added yet</small>
+        <% end %>
+        
+        <hr>
+        
+        <div class="d-grid">
+          <%= link_to "Add Content", 
+              new_school_course_chapter_course_content_path(@school, @course, @chapter),
+              class: "btn btn-outline-primary btn-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

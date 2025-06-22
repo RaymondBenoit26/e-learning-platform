@@ -1,0 +1,108 @@
+<% content_for :title, "School Details" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-university"></i> <%= @school.name %></h1>
+  <div class="btn-group">
+    <%= link_to "Back to Schools", super_admin_schools_path, class: "btn btn-outline-secondary" %>
+    <%= link_to "Edit School", edit_super_admin_school_path(@school), class: "btn btn-warning" %>
+    <%= link_to "Delete School", super_admin_school_path(@school), method: :delete, data: { confirm: "Are you sure? This will permanently delete the school and all associated data." }, class: "btn btn-danger" %>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header"><strong>School Information</strong></div>
+      <div class="card-body">
+        <p><strong>Name:</strong> <%= @school.name %></p>
+        <p><strong>Domain:</strong> <%= @school.domain %></p>
+        <p><strong>Website:</strong> <% if @school.website.present? %><a href="<%= @school.website %>" target="_blank"><%= @school.website %></a><% else %><span class="text-muted">N/A</span><% end %></p>
+        <p><strong>Email:</strong> <%= mail_to @school.email %></p>
+        <p><strong>Phone:</strong> <%= @school.phone.presence || content_tag(:span, "N/A", class: "text-muted") %></p>
+        <p><strong>Address:</strong> <%= @school.address.presence || content_tag(:span, "N/A", class: "text-muted") %></p>
+        <p><strong>City:</strong> <%= @school.city.presence || content_tag(:span, "N/A", class: "text-muted") %></p>
+        <p><strong>State:</strong> <%= @school.state.presence || content_tag(:span, "N/A", class: "text-muted") %></p>
+        <p><strong>ZIP Code:</strong> <%= @school.zip_code.presence || content_tag(:span, "N/A", class: "text-muted") %></p>
+        <p><strong>Created:</strong> <%= @school.created_at.strftime("%B %d, %Y") %></p>
+      </div>
+    </div>
+    <!-- Licenses Section -->
+    <div class="card mb-3">
+      <div class="card-header"><strong>Licenses</strong></div>
+      <div class="card-body">
+        <% terms = @school.terms.includes(:licenses) %>
+        <% if terms.any? { |term| term.licenses.any? } %>
+          <% terms.each do |term| %>
+            <% if term.licenses.any? %>
+              <h6 class="mt-3"><i class="fas fa-calendar-alt"></i> <%= term.name %></h6>
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Seats</th>
+                    <th>Expires</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% term.licenses.each do |license| %>
+                    <tr>
+                      <td><%= license.name %></td>
+                      <td><%= license.license_type&.humanize %></td>
+                      <td><%= number_to_currency(license.price) %></td>
+                      <td><%= license.max_seats %></td>
+                      <td><%= license.expires_at&.strftime("%b %d, %Y") || 'N/A' %></td>
+                      <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                          <%= link_to "View", school_term_license_path(license.term.school, license.term, license), class: "btn btn-outline-primary btn-sm" %>
+                          <%= link_to "Edit", edit_school_term_license_path(license.term.school, license.term, license), class: "btn btn-outline-warning btn-sm" %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            <% end %>
+          <% end %>
+        <% else %>
+          <span class="text-muted">No licenses for this school.</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Statistics</strong></div>
+      <div class="card-body">
+        <p><span class="badge bg-success"><%= @students_count %> Students</span></p>
+        <p><span class="badge bg-warning"><%= @instructors_count %> Instructors</span></p>
+        <p><span class="badge bg-info"><%= @management_count %> Admins</span></p>
+        <p><span class="badge bg-primary"><%= @courses_count %> Courses</span></p>
+        <p><span class="badge bg-secondary"><%= @terms_count %> Terms</span></p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><strong>Recent Enrollments</strong></div>
+      <div class="card-body">
+        <% if @recent_enrollments.any? %>
+          <ul class="list-group">
+            <% @recent_enrollments.each do |enrollment| %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>
+                  <% if enrollment.enrollable.is_a?(Course) %>
+                    <strong><%= enrollment.student.full_name %></strong> enrolled in <strong><%= enrollment.enrollable.name %></strong>
+                  <% end %>
+                </span>
+                <span class="text-muted small"><%= enrollment.created_at.strftime("%b %d, %Y") %></span>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <span class="text-muted">No recent enrollments</span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

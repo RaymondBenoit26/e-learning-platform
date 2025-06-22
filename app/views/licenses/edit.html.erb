@@ -1,0 +1,235 @@
+<% content_for :title, "Edit #{@license.name}" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-edit"></i> Edit License</h1>
+  <div class="btn-group">
+    <%= link_to "View License", [@license.term.school, @license.term, @license], class: "btn btn-outline-info" %>
+    <%= link_to "All Licenses", licenses_path, class: "btn btn-outline-primary" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-key"></i> License Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@license.term.school, @license.term, @license], local: true, class: "needs-validation", novalidate: true do |form| %>
+          <% if @license.errors.any? %>
+            <div class="alert alert-danger">
+              <h6>Please fix the following errors:</h6>
+              <ul class="mb-0">
+                <% @license.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :name, class: "form-label" %>
+                <%= form.text_field :name, class: "form-control", required: true %>
+                <div class="invalid-feedback">
+                  Please provide a license name.
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :license_type, class: "form-label" %>
+                <%= form.select :license_type, 
+                    options_for_select([
+                      ['Standard', 'standard'],
+                      ['Premium', 'premium'],
+                      ['Enterprise', 'enterprise'],
+                      ['Lifetime', 'lifetime']
+                    ], @license.license_type), 
+                    {}, 
+                    { class: "form-select", required: true } %>
+                <div class="invalid-feedback">
+                  Please select a license type.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, rows: 3, class: "form-control" %>
+            <div class="form-text">Optional: Describe the features and benefits of this license.</div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :term_id, "Term", class: "form-label" %>
+                <%= form.select :term_id, 
+                    options_from_collection_for_select(@terms, :id, :name, @license.licensable_id), 
+                    {}, 
+                    { class: "form-select", required: true } %>
+                <div class="invalid-feedback">
+                  Please select a term.
+                </div>
+                <% if @license.license_accesses.any? %>
+                  <div class="form-text text-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Warning: Changing the term may affect existing enrollments.
+                  </div>
+                <% end %>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :price, "Price ($)", class: "form-label" %>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <%= form.number_field :price, step: 0.01, min: 0, class: "form-control", required: true %>
+                </div>
+                <div class="form-text">Set to 0.00 for free licenses.</div>
+                <div class="invalid-feedback">
+                  Please enter a valid price.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :max_seats, "Maximum Seats", class: "form-label" %>
+                <%= form.number_field :max_seats, min: 1, class: "form-control", required: true %>
+                <div class="form-text">
+                  Current usage: <%= @license.students.count %> seats
+                  <% if @license.students.count > 0 %>
+                    <br><span class="text-warning">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      Cannot reduce below current usage
+                    </span>
+                  <% end %>
+                </div>
+                <div class="invalid-feedback">
+                  Please enter the maximum number of seats.
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :expires_at, "Expiration Date", class: "form-label" %>
+                <%= form.datetime_local_field :expires_at, 
+                    value: (@license.expires_at&.strftime("%Y-%m-%dT%H:%M")), 
+                    class: "form-control" %>
+                <div class="form-text">Leave empty for lifetime licenses.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <%= link_to "Cancel", [@license.term.school, @license.term, @license], class: "btn btn-secondary" %>
+            <%= form.submit "Update License", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Current Usage Stats -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6><i class="fas fa-chart-bar"></i> Current Usage</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6">
+            <h4 class="text-primary"><%= @license.students.count %></h4>
+            <small>Active Users</small>
+          </div>
+          <div class="col-6">
+            <h4 class="text-success">$<%= number_with_precision(@license.payments.sum(:amount), precision: 0) %></h4>
+            <small>Revenue</small>
+          </div>
+        </div>
+        <hr>
+        <% utilization = (@license.students.count.to_f / @license.max_seats * 100).round(1) %>
+        <div class="text-center">
+          <h6>Utilization: <%= utilization %>%</h6>
+          <div class="progress">
+            <div class="progress-bar bg-<%= utilization > 90 ? 'danger' : utilization > 70 ? 'warning' : 'success' %>" 
+                 role="progressbar" 
+                 style="width: <%= utilization %>%">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Warning Notes -->
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-exclamation-triangle text-warning"></i> Important Notes</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled">
+          <li class="mb-2">
+            <i class="fas fa-info-circle text-info me-2"></i>
+            <small>Price changes only affect new purchases</small>
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-warning text-warning me-2"></i>
+            <small>Cannot reduce max seats below current usage</small>
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-calendar text-primary me-2"></i>
+            <small>Expiration changes affect all users immediately</small>
+          </li>
+          <% if @license.license_accesses.any? %>
+            <li class="mb-2">
+              <i class="fas fa-users text-danger me-2"></i>
+              <small>This license has active users - changes will affect them</small>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Bootstrap validation + custom validation for max_seats
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var maxSeatsInput = document.getElementById('license_max_seats');
+    var currentUsage = <%= @license.students.count %>;
+    
+    // Custom validation for max seats
+    if (maxSeatsInput) {
+      maxSeatsInput.addEventListener('input', function() {
+        var value = parseInt(this.value);
+        if (value < currentUsage) {
+          this.setCustomValidity('Cannot reduce below current usage of ' + currentUsage + ' seats');
+        } else {
+          this.setCustomValidity('');
+        }
+      });
+    }
+    
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>

@@ -1,0 +1,357 @@
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h4>
+            <i class="fas fa-user-plus"></i>
+            <%= @enrollable.is_a?(Term) ? "Enroll in Term" : "Enroll in Course" %>
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <h5><%= @enrollable.name %></h5>
+              <% if @enrollable.description.present? %>
+                <p class="text-muted"><%= @enrollable.description %></p>
+              <% end %>
+              
+              <% if @enrollable.is_a?(Term) %>
+                <div class="row">
+                  <div class="col-6">
+                    <small class="text-muted">Start Date</small><br>
+                    <strong><%= @enrollable.start_date.strftime("%B %d, %Y") %></strong>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">End Date</small><br>
+                    <strong><%= @enrollable.end_date.strftime("%B %d, %Y") %></strong>
+                  </div>
+                </div>
+                
+                <div class="mt-3">
+                  <small class="text-muted">Courses in this term:</small><br>
+                  <strong><%= @enrollable.courses.count %> courses</strong>
+                  
+                  <!-- Payment Calculation Display -->
+                  <div class="mt-2">
+                    <% if @enrollable.already_purchased_courses_for(current_user).any? %>
+                      <div class="alert alert-info">
+                        <small>
+                          <i class="fas fa-info-circle"></i>
+                          <strong>Price Adjustment:</strong> You're already enrolled in 
+                          <%= pluralize(@enrollable.already_purchased_courses_for(current_user).count, 'course') %> 
+                          from this term.
+                        </small>
+                      </div>
+                      <div class="d-flex justify-content-between">
+                        <span>Full term price:</span>
+                        <span><del>$<%= @enrollable.total_course_price %></del></span>
+                      </div>
+                      <div class="d-flex justify-content-between">
+                        <span>Your adjusted price:</span>
+                        <span class="text-primary fw-bold">$<%= @enrollable.adjusted_total_course_price_for(current_user) %></span>
+                      </div>
+                    <% else %>
+                      <span class="badge bg-<%= @enrollable.free? ? 'success' : 'primary' %> ms-2">
+                        $<%= @enrollable.total_course_price %>
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+              <% elsif @enrollable.is_a?(Course) %>
+                <div class="mt-2">
+                  <% if @enrollable.price&.positive? %>
+                    <span class="badge bg-primary">$<%= @enrollable.price %></span>
+                  <% else %>
+                    <span class="badge bg-success">Free</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+            
+            <div class="col-md-4 text-end">
+              <% if @enrollable.is_a?(Term) %>
+                <div class="text-muted">
+                  <small>Term Status</small><br>
+                  <% if @enrollable.start_date > Date.current %>
+                    <span class="badge bg-warning">Upcoming</span>
+                  <% elsif @enrollable.end_date < Date.current %>
+                    <span class="badge bg-secondary">Completed</span>
+                  <% else %>
+                    <span class="badge bg-success">Active</span>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+
+          <%= form_with model: @enrollment, url: @enrollable.is_a?(Term) ? school_term_enrollments_path(@enrollable.school, @enrollable) : school_course_enrollments_path(@enrollable.school, @enrollable), local: true do |form| %>
+            <% if @enrollment.errors.any? %>
+              <div class="alert alert-danger">
+                <h6><%= pluralize(@enrollment.errors.count, "error") %> prohibited this enrollment from being saved:</h6>
+                <ul class="mb-0">
+                  <% @enrollment.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            <% end %>
+
+            <% if @enrollable.is_a?(Term) %>
+              <!-- Term enrollment options -->
+              <div class="mb-4">
+                <h6>Enrollment Type</h6>
+                
+                <% if @enrollable.licenses.available.any? %>
+                  <div class="form-check mb-3">
+                    <%= form.radio_button :enrollment_type, "license_based", class: "form-check-input", checked: true, data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.label :enrollment_type_license_based, "License-based enrollment", class: "form-check-label" %>
+                    <small class="text-muted d-block">
+                      Use an available license to enroll in this term.
+                    </small>
+                    
+                    <!-- License Selection Dropdown -->
+                    <div class="mt-2" id="license-selection">
+                      <%= form.label :license_id, "Select License", class: "form-label" %>
+                      <%= form.collection_select :license_id, @enrollable.licenses.available, :id, :name_with_price, 
+                          { prompt: "Choose a license..." }, 
+                          { class: "form-select", data: { action: "change->enrollment#updateLicensePrice" } } %>
+                      <div class="form-text">
+                        <small id="license-details"></small>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+                
+                <div class="form-check mb-3">
+                  <%= form.radio_button :enrollment_type, "direct_payment", class: "form-check-input", data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                  <%= form.label :enrollment_type_direct_payment, "Direct payment", class: "form-check-label" %>
+                  <small class="text-muted d-block">
+                    Pay directly for this term enrollment.
+                  </small>
+                  
+                  <!-- Payment Method Selection -->
+                  <div class="mt-2" id="payment-method-selection" style="display: none;">
+                    <%= form.label :payment_method, "Payment Method", class: "form-label" %>
+                    <%= form.select :payment_method, 
+                        options_for_select([
+                          ['Credit Card', 'credit_card'],
+                          ['Bank Transfer', 'bank_transfer'],
+                          ['Cash', 'cash']
+                        ]), 
+                        { prompt: "Select payment method..." }, 
+                        { class: "form-select" } %>
+                    
+                    <!-- Payment Amount Display -->
+                    <div class="mt-2">
+                      <div class="alert alert-info">
+                        <strong>Payment Amount:</strong> 
+                        <span id="payment-amount">
+                          $<%= @enrollable.adjusted_total_course_price_for(current_user) %>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <% if @enrollable.free? %>
+                  <div class="form-check mb-3">
+                    <%= form.radio_button :enrollment_type, "free", class: "form-check-input", data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.label :enrollment_type_free, "Free enrollment", class: "form-check-label" %>
+                    <small class="text-muted d-block">
+                      Enroll for free (all courses in this term are free).
+                    </small>
+                  </div>
+                <% end %>
+              </div>
+            <% else %>
+              <!-- Course enrollment options -->
+              <div class="mb-4">
+                <h6>Enrollment Type</h6>
+                
+                <% if @enrollable.licenses.available.any? %>
+                  <div class="form-check mb-3">
+                    <%= form.radio_button :enrollment_type, "license_based", class: "form-check-input", checked: true, data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.label :enrollment_type_license_based, "License-based enrollment", class: "form-check-label" %>
+                    <small class="text-muted d-block">
+                      Use an available license to enroll in this course.
+                    </small>
+                    
+                    <!-- License Selection Dropdown -->
+                    <div class="mt-2" id="license-selection">
+                      <%= form.label :license_id, "Select License", class: "form-label" %>
+                      <%= form.collection_select :license_id, @enrollable.licenses.available, :id, :name_with_price, 
+                          { prompt: "Choose a license..." }, 
+                          { class: "form-select", data: { action: "change->enrollment#updateLicensePrice" } } %>
+                      <div class="form-text">
+                        <small id="license-details"></small>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+                
+                <% if @enrollable.price&.positive? %>
+                  <div class="form-check mb-3">
+                    <%= form.radio_button :enrollment_type, "direct_payment", class: "form-check-input", data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.label :enrollment_type_direct_payment, "Direct payment", class: "form-check-label" %>
+                    <small class="text-muted d-block">
+                      Pay directly for this course.
+                    </small>
+                    
+                    <!-- Payment Method Selection -->
+                    <div class="mt-2" id="payment-method-selection" style="display: none;">
+                      <%= form.label :payment_method, "Payment Method", class: "form-label" %>
+                      <%= form.select :payment_method, 
+                          options_for_select([
+                            ['Credit Card', 'credit_card'],
+                            ['Bank Transfer', 'bank_transfer'],
+                            ['Cash', 'cash']
+                          ]), 
+                          { prompt: "Select payment method..." }, 
+                          { class: "form-select" } %>
+                      
+                      <!-- Payment Amount Display -->
+                      <div class="mt-2">
+                        <div class="alert alert-info">
+                          <strong>Payment Amount:</strong> 
+                          <span id="payment-amount">
+                            $<%= @enrollable.price %>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+                
+                <% if @enrollable.free? %>
+                  <div class="form-check mb-3">
+                    <%= form.radio_button :enrollment_type, "free", class: "form-check-input", data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.label :enrollment_type_free, "Free enrollment", class: "form-check-label" %>
+                    <small class="text-muted d-block">
+                      Enroll for free (this course is free).
+                    </small>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <%= link_to "Cancel", :back, class: "btn btn-outline-secondary" %>
+              <%= form.submit "Enroll Now", class: "btn btn-primary", id: "enroll-button" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const enrollmentTypeRadios = document.querySelectorAll('input[name="enrollment[enrollment_type]"]');
+  const licenseSelection = document.getElementById('license-selection');
+  const paymentMethodSelection = document.getElementById('payment-method-selection');
+  const licenseSelect = document.querySelector('select[name="enrollment[license_id]"]');
+  const licenseDetails = document.getElementById('license-details');
+  const paymentAmount = document.getElementById('payment-amount');
+  
+  // License data for JavaScript
+  const licenses = <%= raw @enrollable.licenses.available.map { |l| { id: l.id, name: l.name, price: l.price, available_seats: l.available_seats, expires_at: l.expires_at } }.to_json %>;
+  
+  function toggleEnrollmentType() {
+    const selectedType = document.querySelector('input[name="enrollment[enrollment_type]"]:checked').value;
+    const licenseSelect = document.querySelector('select[name="enrollment[license_id]"]');
+    const paymentMethodSelect = document.querySelector('select[name="enrollment[payment_method]"]');
+    
+    if (selectedType === 'license_based') {
+      licenseSelection.style.display = 'block';
+      paymentMethodSelection.style.display = 'none';
+      
+      // Set required attributes
+      if (licenseSelect) licenseSelect.required = true;
+      if (paymentMethodSelect) paymentMethodSelect.required = false;
+    } else if (selectedType === 'direct_payment') {
+      licenseSelection.style.display = 'none';
+      paymentMethodSelection.style.display = 'block';
+      <% if @enrollable.is_a?(Term) %>
+        paymentAmount.textContent = '$<%= @enrollable.adjusted_total_course_price_for(current_user) %>';
+      <% else %>
+        paymentAmount.textContent = '$<%= @enrollable.price || 0 %>';
+      <% end %>
+      
+      // Set required attributes
+      if (licenseSelect) licenseSelect.required = false;
+      if (paymentMethodSelect) paymentMethodSelect.required = true;
+    } else {
+      licenseSelection.style.display = 'none';
+      paymentMethodSelection.style.display = 'none';
+      
+      // Remove required attributes for free enrollment
+      if (licenseSelect) licenseSelect.required = false;
+      if (paymentMethodSelect) paymentMethodSelect.required = false;
+    }
+  }
+  
+  function updateLicensePrice() {
+    const selectedLicenseId = licenseSelect.value;
+    if (selectedLicenseId) {
+      const license = licenses.find(l => l.id == selectedLicenseId);
+      if (license) {
+        licenseDetails.innerHTML = `
+          <strong>${license.name}</strong><br>
+          Price: $${license.price}<br>
+          Available seats: ${license.available_seats}<br>
+          ${license.expires_at ? `Expires: ${new Date(license.expires_at).toLocaleDateString()}` : 'Lifetime license'}
+        `;
+      }
+    } else {
+      licenseDetails.innerHTML = '';
+    }
+  }
+  
+  // Event listeners
+  enrollmentTypeRadios.forEach(radio => {
+    radio.addEventListener('change', toggleEnrollmentType);
+  });
+  
+  if (licenseSelect) {
+    licenseSelect.addEventListener('change', updateLicensePrice);
+  }
+  
+  // Form validation
+  const form = document.querySelector('form');
+  const enrollButton = document.getElementById('enroll-button');
+  
+  form.addEventListener('submit', function(e) {
+    const selectedType = document.querySelector('input[name="enrollment[enrollment_type]"]:checked')?.value;
+    
+    if (!selectedType) {
+      e.preventDefault();
+      alert('Please select an enrollment type.');
+      return false;
+    }
+    
+    if (selectedType === 'license_based') {
+      const licenseId = document.querySelector('select[name="enrollment[license_id]"]')?.value;
+      if (!licenseId) {
+        e.preventDefault();
+        alert('Please select a license for license-based enrollment.');
+        return false;
+      }
+    } else if (selectedType === 'direct_payment') {
+      const paymentMethod = document.querySelector('select[name="enrollment[payment_method]"]')?.value;
+      if (!paymentMethod) {
+        e.preventDefault();
+        alert('Please select a payment method for direct payment enrollment.');
+        return false;
+      }
+    }
+    
+    // If we get here, form is valid
+    return true;
+  });
+  
+  // Initialize
+  toggleEnrollmentType();
+});
+</script> 

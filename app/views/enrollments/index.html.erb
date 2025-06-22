@@ -1,0 +1,278 @@
+<% content_for :title, "Enrollments" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-users"></i> Enrollments</h1>
+  
+  <% if current_user.management? %>
+    <div class="btn-group">
+      <%= link_to "Export", "#", class: "btn btn-outline-secondary" %>
+      <%= link_to "Analytics", "#", class: "btn btn-outline-info" %>
+    </div>
+  <% end %>
+</div>
+
+<!-- Summary Cards for Management and Instructors -->
+<% if current_user.management? || current_user.instructor? %>
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body text-center">
+          <h3><%= @enrollments.count %></h3>
+          <p class="mb-0">Total Enrollments</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <h3><%= @enrollments.course_enrollments.joins("INNER JOIN courses ON courses.id = enrollments.enrollable_id").distinct.count('courses.id') %></h3>
+          <p class="mb-0">Active Courses</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body text-center">
+          <h3><%= @enrollments.joins(:student).distinct.count('users.id') %></h3>
+          <p class="mb-0">Unique Students</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body text-center">
+          <h3><%= @enrollments.where('enrollments.created_at > ?', 1.week.ago).count %></h3>
+          <p class="mb-0">This Week</p>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= search_form_for @q, local: true, class: "row g-3" do |f| %>
+      <% unless current_user.student? %>
+        <div class="col-md-3">
+          <%= f.label :student_first_name_or_student_last_name_cont, "Student Name", class: "form-label" %>
+          <%= f.search_field :student_first_name_or_student_last_name_cont, 
+              placeholder: "Search by student name...", class: "form-control" %>
+        </div>
+      <% end %>
+      
+      <div class="col-md-3">
+        <%= f.label :q, "Course/Term", class: "form-label" %>
+        <%= text_field_tag :search_term, params[:search_term], 
+            placeholder: "Search by course or term name...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= f.label :created_at_gteq, "Enrolled After", class: "form-label" %>
+        <%= f.date_field :created_at_gteq, class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= f.label :created_at_lteq, "Enrolled Before", class: "form-label" %>
+        <%= f.date_field :created_at_lteq, class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= f.label :s, "Sort by", class: "form-label" %>
+        <%= f.select :s, 
+            options_for_select([
+              ['Newest First', 'created_at desc'],
+              ['Oldest First', 'created_at asc'],
+              ['Student Name (A-Z)', 'student_first_name asc'],
+              ['Student Name (Z-A)', 'student_first_name desc']
+            ], params.dig(:q, :s)), 
+            { include_blank: "Default Order" }, 
+            { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-12 d-flex align-items-end">
+        <%= f.submit "Search", class: "btn btn-primary me-2" %>
+        <%= link_to "Clear", enrollments_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Student Enrollment Type Filter -->
+<% if current_user.student? %>
+  <div class="card mb-4">
+    <div class="card-body">
+      <ul class="nav nav-pills">
+        <li class="nav-item">
+          <%= link_to enrollments_path, 
+              class: "nav-link #{'active' if @enrollment_type.blank?}" do %>
+            All Enrollments
+            <span class="badge bg-secondary ms-1"><%= @total_enrollment_count %></span>
+          <% end %>
+        </li>
+        <li class="nav-item">
+          <%= link_to enrollments_path(type: 'term'), 
+              class: "nav-link #{'active' if @enrollment_type == 'term'}" do %>
+            Term Enrollments
+            <span class="badge bg-secondary ms-1"><%= @term_enrollment_count %></span>
+          <% end %>
+        </li>
+        <li class="nav-item">
+          <%= link_to enrollments_path(type: 'course'), 
+              class: "nav-link #{'active' if @enrollment_type == 'course'}" do %>
+            Course Enrollments
+            <span class="badge bg-secondary ms-1"><%= @course_enrollment_count %></span>
+          <% end %>
+        </li>
+      </ul>
+    </div>
+  </div>
+<% end %>
+
+<!-- Enrollments Table -->
+<div class="card">
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <% if current_user.student? %>
+          <% case @enrollment_type %>
+          <% when 'term' %>
+            My Term Enrollments
+          <% when 'course' %>
+            My Course Enrollments
+          <% else %>
+            My Enrollments
+          <% end %>
+        <% elsif current_user.instructor? %>
+          Student Enrollments in My Courses
+        <% else %>
+          All School Enrollments
+        <% end %>
+      </h5>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <% if @enrollments.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <% unless current_user.student? %>
+                <th>Student</th>
+              <% end %>
+              <th>
+                <% if current_user.student? && @enrollment_type.blank? %>
+                  Item
+                <% elsif @enrollment_type == 'term' %>
+                  Term
+                <% else %>
+                  Course
+                <% end %>
+              </th>
+              <th>Enrolled Date</th>
+              <th>Status</th>
+              <% unless current_user.student? %>
+                <th>Payment</th>
+              <% end %>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @enrollments.each do |enrollment| %>
+              <tr>
+                <% unless current_user.student? %>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                           style="width: 35px; height: 35px; font-size: 14px;">
+                        <%= enrollment.student.first_name&.first&.upcase %>
+                      </div>
+                      <div>
+                        <strong><%= enrollment.student.full_name %></strong><br>
+                        <small class="text-muted"><%= enrollment.student.email %></small>
+                      </div>
+                    </div>
+                  </td>
+                <% end %>
+                
+                <td>
+                  <% if enrollment.enrollable.is_a?(Course) %>
+                    <%= link_to enrollment.enrollable.name, [enrollment.enrollable.school, enrollment.enrollable], class: "text-decoration-none" %>
+                    <br>
+                    <small class="text-muted">
+                      <i class="fas fa-book"></i> Course • <%= pluralize(enrollment.enrollable.chapters.count, 'chapter') %>
+                    </small>
+                  <% elsif enrollment.enrollable.is_a?(Term) %>
+                    <%= link_to enrollment.enrollable.name, [enrollment.enrollable.school, enrollment.enrollable], class: "text-decoration-none" %>
+                    <br>
+                    <small class="text-muted">
+                      <i class="fas fa-calendar-alt"></i> Term • <%= pluralize(enrollment.enrollable.courses.count, 'course') %>
+                    </small>
+                  <% end %>
+                </td>
+                
+                <td>
+                  <%= enrollment.created_at.strftime("%B %d, %Y") %><br>
+                  <small class="text-muted"><%= time_ago_in_words(enrollment.created_at) %> ago</small>
+                </td>
+                
+                <td>
+                  <% case enrollment.status %>
+                  <% when 'active' %>
+                    <span class="badge bg-success">Active</span>
+                  <% when 'pending' %>
+                    <span class="badge bg-warning">Pending</span>
+                  <% when 'inactive' %>
+                    <span class="badge bg-secondary">Inactive</span>
+                  <% else %>
+                    <span class="badge bg-primary"><%= enrollment.status.humanize %></span>
+                  <% end %>
+                </td>
+                
+                <% unless current_user.student? %>
+                  <td>
+                    <% if enrollment.payable %>
+                      <span class="badge bg-info">Paid</span><br>
+                      <small class="text-muted">$<%= enrollment.payable.try(:price) || '0' %></small>
+                    <% else %>
+                      <span class="badge bg-success">Free</span><br>
+                      <small class="text-muted">$0</small>
+                    <% end %>
+                  </td>
+                <% end %>
+                
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <%= link_to "View", enrollment, class: "btn btn-outline-primary btn-sm" %>
+                    <% if current_user.management? || (current_user.instructor? && enrollment.enrollable.is_a?(Course) && current_user.assigned_courses.include?(enrollment.enrollable)) || (current_user.student? && enrollment.student == current_user) %>
+                      <%= link_to "Remove", enrollment, 
+                          method: :delete,
+                          class: "btn btn-outline-danger btn-sm",
+                          data: { confirm: "Are you sure you want to remove this enrollment?" } %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-center py-4">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h5>No Enrollments Found</h5>
+        <p class="text-muted">
+          <% if current_user.student? %>
+            You haven't enrolled in any courses yet.
+            <%= link_to "Browse Courses", courses_path, class: "btn btn-primary" %>
+          <% elsif current_user.instructor? %>
+            No students have enrolled in your courses yet.
+          <% else %>
+            No enrollments have been made yet.
+          <% end %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div> 

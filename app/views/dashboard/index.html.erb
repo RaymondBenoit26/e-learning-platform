@@ -1,0 +1,631 @@
+<% content_for :title, "Dashboard" %>
+
+<div class="row">
+  <div class="col-12">
+    <h1 class="mb-4">
+      <i class="fas fa-tachometer-alt"></i> Dashboard
+      <small class="text-muted">- <%= current_user.user_type.humanize %></small>
+    </h1>
+  </div>
+</div>
+
+<% if current_user.management? %>
+  <!-- Management Dashboard -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_students %></h4>
+              <p class="mb-0">Students</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-user-graduate fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_instructors %></h4>
+              <p class="mb-0">Instructors</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-chalkboard-teacher fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_courses %></h4>
+              <p class="mb-0">Courses</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-book fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @recent_enrollments.count %></h4>
+              <p class="mb-0">Recent Enrollments</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-users fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-clock"></i> Recent Enrollments</h5>
+        </div>
+        <div class="card-body">
+          <% if @recent_enrollments.any? %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @recent_enrollments.each do |enrollment| %>
+                    <% if enrollment.enrollable.is_a?(Course) %>
+                      <tr>
+                        <td><%= enrollment.student.full_name %></td>
+                        <td><%= enrollment.enrollable.name %></td>
+                        <td><%= enrollment.created_at.strftime("%B %d, %Y") %></td>
+                      </tr>
+                    <% end %>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-muted">No recent enrollments</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-cog"></i> Quick Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <%= link_to "Manage School", @school, class: "btn btn-outline-primary" %>
+            <%= link_to "View Courses", school_courses_path(@school), class: "btn btn-outline-info" %>
+            <%= link_to "Manage Users", school_users_path(@school), class: "btn btn-outline-success" %>
+            <%= link_to "View Enrollments", enrollments_path, class: "btn btn-outline-warning" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% elsif current_user.instructor? %>
+  <!-- Instructor Dashboard -->
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @assigned_courses.count %></h4>
+              <p class="mb-0">My Courses</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-book fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_students %></h4>
+              <p class="mb-0">Total Students</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-user-graduate fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @recent_enrollments.count %></h4>
+              <p class="mb-0">Recent Enrollments</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-users fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-book"></i> My Courses</h5>
+        </div>
+        <div class="card-body">
+          <% if @assigned_courses.any? %>
+            <% @assigned_courses.each do |course| %>
+              <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                <div>
+                  <h6 class="mb-1"><%= course.name %></h6>
+                  <small class="text-muted"><%= pluralize(course.students.count, 'student') %></small>
+                </div>
+                <div>
+                  <%= link_to "View", [course.school, course], class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted">No courses assigned</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-clock"></i> Recent Enrollments</h5>
+        </div>
+        <div class="card-body">
+          <% if @recent_enrollments.any? %>
+            <% @recent_enrollments.each do |enrollment| %>
+              <% if enrollment.enrollable.is_a?(Course) %>
+                <div class="border-bottom py-2">
+                  <small class="text-muted d-block"><%= enrollment.created_at.strftime("%B %d") %></small>
+                  <span><%= enrollment.student.full_name %></span>
+                  <small class="text-muted">enrolled in <%= enrollment.enrollable.name %></small>
+                </div>
+              <% end %>
+            <% end %>
+          <% else %>
+            <p class="text-muted">No recent activity</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% elsif current_user.super_admin? %>
+  <!-- Super Admin Dashboard -->
+  <div class="row mb-4">
+    <div class="col-md-2 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_schools %></h4>
+              <p class="mb-0">Schools</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-university fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_students %></h4>
+              <p class="mb-0">Students</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-user-graduate fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_instructors %></h4>
+              <p class="mb-0">Instructors</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-chalkboard-teacher fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_courses %></h4>
+              <p class="mb-0">Courses</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-book fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+      <div class="card bg-secondary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_licenses %></h4>
+              <p class="mb-0">Licenses</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-key fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+      <div class="card bg-dark text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @total_term_enrollments %></h4>
+              <p class="mb-0">Term Enrollments</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-calendar-alt fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5><i class="fas fa-clock"></i> Recent Enrollments</h5>
+          <%= link_to "View All", super_admin_schools_path, class: "btn btn-sm btn-primary" %>
+        </div>
+        <div class="card-body">
+          <% if @recent_enrollments&.any? %>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Student</th>
+                    <th>Course</th>
+                    <th>School</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @recent_enrollments.each do |enrollment| %>
+                    <% if enrollment.enrollable.is_a?(Course) %>
+                      <tr>
+                        <td><%= enrollment.student.full_name %></td>
+                        <td><%= enrollment.enrollable.name %></td>
+                        <td><%= enrollment.enrollable.school.name %></td>
+                        <td><%= enrollment.created_at.strftime("%B %d, %Y") %></td>
+                      </tr>
+                    <% end %>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-muted">No recent enrollments</p>
+          <% end %>
+        </div>
+      </div>
+      <!-- Recent Licenses Section -->
+      <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5><i class="fas fa-key"></i> Recent Licenses</h5>
+          <%= link_to "View All Licenses", licenses_path, class: "btn btn-sm btn-info" %>
+        </div>
+        <div class="card-body">
+          <% if @active_licenses&.any? %>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Term</th>
+                    <th>Type</th>
+                    <th>Price</th>
+                    <th>Seats</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @active_licenses.each do |license| %>
+                    <tr>
+                      <td><%= license.name %></td>
+                      <td><%= license.term&.name %></td>
+                      <td><%= license.license_type&.humanize %></td>
+                      <td><%= number_to_currency(license.price) %></td>
+                      <td><%= license.max_seats %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-muted">No active licenses</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-cog"></i> Super Admin Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <%= link_to "Manage Schools", super_admin_schools_path, class: "btn btn-outline-primary" %>
+            <%= link_to "Manage Users", super_admin_users_path, class: "btn btn-outline-info" %>
+            <%= link_to "System Overview", super_admin_schools_path, class: "btn btn-outline-success" %>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card mt-3">
+        <div class="card-header">
+          <h5><i class="fas fa-university"></i> Recent Schools</h5>
+        </div>
+        <div class="card-body">
+          <% if @recent_schools&.any? %>
+            <% @recent_schools.each do |school| %>
+              <div class="border-bottom py-2">
+                <h6 class="mb-1"><%= school.name %></h6>
+                <small class="text-muted d-block mb-2">
+                  Created: <%= school.created_at.strftime("%B %d, %Y") %>
+                </small>
+                <%= link_to "View", super_admin_school_path(school), class: "btn btn-sm btn-outline-primary" %>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted">No schools found</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<% else %>
+  <!-- Student Dashboard -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @enrolled_courses.count %></h4>
+              <p class="mb-0">Enrolled Courses</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-book fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= current_user.term_enrollments.count %></h4>
+              <p class="mb-0">Term Enrollments</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-calendar-alt fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @available_courses.count %></h4>
+              <p class="mb-0">Available Courses</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-plus-circle fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h4><%= @enrolled_courses.joins(:chapters).count %></h4>
+              <p class="mb-0">Total Chapters</p>
+            </div>
+            <div class="align-self-center">
+              <i class="fas fa-list fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5><i class="fas fa-book"></i> My Courses</h5>
+          <div>
+            <%= link_to "Browse Terms", school_terms_path(current_school), class: "btn btn-sm btn-outline-success me-2" %>
+            <%= link_to "Browse All", courses_path, class: "btn btn-sm btn-primary" %>
+          </div>
+        </div>
+        <div class="card-body">
+          <% if @enrolled_courses.any? %>
+            <div class="row">
+              <% @enrolled_courses.each do |course| %>
+                <div class="col-md-6 mb-3">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h6 class="card-title"><%= course.name %></h6>
+                      <p class="card-text text-muted"><%= truncate(course.description, length: 100) %></p>
+                      <small class="text-muted">
+                        <%= pluralize(course.chapters.count, 'chapter') %> • 
+                        <%= pluralize(course.instructors.count, 'instructor') %>
+                        <% if course.term %>
+                          • <span class="badge bg-info"><%= course.term.name %></span>
+                        <% end %>
+                      </small>
+                    </div>
+                    <div class="card-footer">
+                      <%= link_to "Continue Learning", course, class: "btn btn-sm btn-primary" %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="text-center py-4">
+              <i class="fas fa-book fa-3x text-muted mb-3"></i>
+              <h5>No Enrolled Courses</h5>
+              <p class="text-muted">Start your learning journey by enrolling in a term or individual course</p>
+              <div class="d-flex justify-content-center gap-2">
+                <%= link_to "Browse Terms", school_terms_path(current_school), class: "btn btn-success" %>
+                <%= link_to "Browse Courses", courses_path, class: "btn btn-primary" %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <!-- Term Enrollments Section -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5><i class="fas fa-calendar-alt"></i> My Term Enrollments</h5>
+        </div>
+        <div class="card-body">
+          <% if current_user.term_enrollments.any? %>
+            <% current_user.term_enrollments.limit(3).each do |enrollment| %>
+              <div class="border-bottom py-2">
+                <h6 class="mb-1"><%= enrollment.enrollable.name %></h6>
+                <small class="text-muted d-block mb-2">
+                  <%= enrollment.enrollable.start_date.strftime("%b %d") %> - <%= enrollment.enrollable.end_date.strftime("%b %d, %Y") %>
+                </small>
+                <span class="badge bg-<%= enrollment.active? ? 'success' : 'secondary' %>">
+                  <%= enrollment.status.humanize %>
+                </span>
+              </div>
+            <% end %>
+            <% if current_user.term_enrollments.count > 3 %>
+              <div class="text-center mt-2">
+                <small class="text-muted">+ <%= current_user.term_enrollments.count - 3 %> more enrollments</small>
+              </div>
+            <% end %>
+            <div class="mt-3">
+              <%= link_to "View All Term Enrollments", enrollments_path(type: 'term'), class: "btn btn-outline-success btn-sm w-100" %>
+            </div>
+          <% else %>
+            <div class="text-center py-3">
+              <i class="fas fa-calendar-plus fa-2x text-muted mb-2"></i>
+              <h6>No Term Enrollments</h6>
+              <p class="text-muted small">Enroll in a term to access multiple courses at once.</p>
+              <%= link_to "Browse Terms", school_terms_path(current_school), class: "btn btn-success btn-sm" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      
+      <!-- Available Courses Section -->
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-star"></i> Available Courses</h5>
+        </div>
+        <div class="card-body">
+          <% if @available_courses.any? %>
+            <% @available_courses.limit(3).each do |course| %>
+              <div class="border-bottom py-2">
+                <h6 class="mb-1"><%= course.name %></h6>
+                <small class="text-muted d-block mb-2"><%= truncate(course.description, length: 60) %></small>
+                <%= link_to "View Details", course, class: "btn btn-sm btn-outline-primary" %>
+              </div>
+            <% end %>
+            <% if @available_courses.count > 3 %>
+              <div class="text-center mt-2">
+                <small class="text-muted">+ <%= @available_courses.count - 3 %> more courses</small>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted">No available courses</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %> 

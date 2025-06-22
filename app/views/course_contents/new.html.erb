@@ -1,0 +1,139 @@
+<% content_for :title, "Add New Content" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <% if @chapter %>
+      <li class="breadcrumb-item"><%= link_to @chapter.title, [@school, @course, @chapter] %></li>
+    <% end %>
+    <li class="breadcrumb-item active">Add Content</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-plus"></i> Add New Content</h1>
+    <p class="text-muted">Create new content for this course</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Content Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @course, @chapter, @course_content], local: true, class: "row g-3" do |form| %>
+          <% if @course_content.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @course_content.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-12">
+            <%= form.label :title, class: "form-label" %>
+            <%= form.text_field :title, class: "form-control", required: true, placeholder: "Enter content title..." %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4,
+                placeholder: "Describe this content..." %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :content_type, class: "form-label" %>
+            <%= form.select :content_type, 
+                options_for_select([
+                  ['Document', 'document'],
+                  ['Video', 'video'],
+                  ['Audio', 'audio'],
+                  ['Image', 'image'],
+                  ['Link', 'link'],
+                  ['General', 'general']
+                ]),
+                { prompt: 'Select content type' },
+                { class: "form-select" } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :chapter_id, "Chapter (Optional)", class: "form-label" %>
+            <%= form.select :chapter_id,
+                options_from_collection_for_select(@course.chapters, :id, :title, @chapter&.id),
+                { prompt: 'Select a chapter (optional)' },
+                { class: "form-select" } %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :file, "File (Optional)", class: "form-label" %>
+            <%= form.file_field :file, class: "form-control" %>
+            <small class="text-muted">Upload a file to attach to this content</small>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Create Content", class: "btn btn-primary" %>
+              <%= link_to "Cancel", @chapter ? [@school, @course, @chapter] : [@school, @course], class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Course Information</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Course:</strong> <%= @course.name %></p>
+        <p><strong>School:</strong> <%= @school.name %></p>
+        <% if @chapter %>
+          <p><strong>Chapter:</strong> <%= @chapter.title %></p>
+        <% end %>
+        <p><strong>Total Content:</strong> <%= @course.course_contents.count %></p>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-lightbulb"></i> Content Types</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled small">
+          <li class="mb-2">
+            <i class="fas fa-file-alt text-primary me-2"></i>
+            <strong>Document:</strong> PDFs, Word docs, etc.
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-video text-danger me-2"></i>
+            <strong>Video:</strong> MP4, MOV, etc.
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-music text-warning me-2"></i>
+            <strong>Audio:</strong> MP3, WAV, etc.
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-image text-success me-2"></i>
+            <strong>Image:</strong> JPG, PNG, etc.
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-link text-info me-2"></i>
+            <strong>Link:</strong> External URLs
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 

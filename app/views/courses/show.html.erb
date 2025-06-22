@@ -1,0 +1,256 @@
+<% content_for :title, @course.name %>
+
+<!-- Course Header -->
+<div class="row mb-4">
+  <div class="col-md-8">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+          <%= link_to "Courses", 
+              params[:school_id] ? school_courses_path(@school) : courses_path %>
+        </li>
+        <li class="breadcrumb-item active"><%= @course.name %></li>
+      </ol>
+    </nav>
+    
+    <h1 class="mb-3"><%= @course.name %></h1>
+    
+    <% if @course.description.present? %>
+      <p class="lead text-muted"><%= @course.description %></p>
+    <% end %>
+    
+    <!-- Course Stats -->
+    <div class="row">
+      <div class="col-md-3 col-6">
+        <div class="text-center">
+          <h4 class="text-primary"><%= @chapters.count %></h4>
+          <small class="text-muted">Chapters</small>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="text-center">
+          <h4 class="text-success"><%= @course.students.count %></h4>
+          <small class="text-muted">Students</small>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="text-center">
+          <h4 class="text-info"><%= @instructors.count %></h4>
+          <small class="text-muted">Instructors</small>
+        </div>
+      </div>
+      <div class="col-md-3 col-6">
+        <div class="text-center">
+          <h4 class="text-warning"><%= @course.course_contents.count %></h4>
+          <small class="text-muted">Resources</small>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-cog"></i> Course Actions</h6>
+      </div>
+      <div class="card-body">
+        <% if current_user.student? %>
+          <% if @enrolled %>
+            <div class="alert alert-success">
+              <i class="fas fa-check-circle"></i> 
+              <% case @access_method %>
+              <% when :direct_enrollment %>
+                You are enrolled in this course
+                <br><small class="text-muted">Direct course enrollment (Active)</small>
+              <% when :term_enrollment %>
+                You have access through your term enrollment
+                <br><small class="text-muted">Enrolled in: <%= @course.term.name %> (Active)</small>
+              <% else %>
+                You have access to this course
+              <% end %>
+            </div>
+            <%= link_to "Continue Learning", "#chapters", 
+                class: "btn btn-primary w-100 mb-2" %>
+            <% if @access_method == :direct_enrollment %>
+              <%= link_to "Unenroll", unenroll_course_path(@course), 
+                  method: :delete,
+                  class: "btn btn-outline-danger w-100",
+                  data: { confirm: "Are you sure you want to unenroll from this course?" } %>
+            <% elsif @access_method == :term_enrollment %>
+              <small class="text-muted d-block mt-2">
+                <i class="fas fa-info-circle"></i> 
+                To unenroll, you would need to unenroll from the term: 
+                <%= link_to @course.term.name, [@course.term.school, @course.term], class: "text-decoration-none" %>
+              </small>
+            <% end %>
+          <% elsif @can_enroll %>
+            <% if @course.term.present? %>
+              <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Part of <%= @course.term.name %></strong><br>
+                <small>Consider enrolling in the full term for access to all courses</small>
+              </div>
+            <% end %>
+            <p class="text-muted">Ready to start learning?</p>
+            <div class="d-grid gap-2">
+              <%= link_to "Enroll in Course", enroll_course_path(@course), 
+                  method: :post,
+                  class: "btn btn-success",
+                  data: { confirm: "Are you sure you want to enroll in this course?" } %>
+              <% if @course.term.present? %>
+                <%= link_to "Enroll in Full Term", [@course.term.school, @course.term], 
+                    class: "btn btn-outline-primary" %>
+              <% end %>
+            </div>
+          <% else %>
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle"></i> 
+              You cannot enroll in this course
+            </div>
+          <% end %>
+        <% elsif current_user.management? || current_user.instructor? %>
+          <div class="d-grid gap-2">
+            <%= link_to "Edit Course", edit_school_course_path(@school, @course), 
+                class: "btn btn-warning" %>
+            <%= link_to "Add Chapter", new_school_course_chapter_path(@school, @course), 
+                class: "btn btn-primary" %>
+            <%= link_to "View Enrollments", enrollments_path(course_id: @course.id), 
+                class: "btn btn-outline-info" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Instructors Section -->
+<% if @instructors.any? %>
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5><i class="fas fa-chalkboard-teacher"></i> Instructors</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <% @instructors.each do |instructor| %>
+          <div class="col-md-6 mb-3">
+            <div class="d-flex align-items-center">
+              <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                   style="width: 50px; height: 50px;">
+                <i class="fas fa-user"></i>
+              </div>
+              <div>
+                <h6 class="mb-1"><%= instructor.full_name %></h6>
+                <small class="text-muted"><%= instructor.email %></small>
+                <% if instructor.bio.present? %>
+                  <p class="mb-0 small"><%= truncate(instructor.bio, length: 80) %></p>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Course Content -->
+<div id="chapters">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="fas fa-list"></i> Course Content</h3>
+    <% if (current_user.management? || current_user.instructor?) && can?(:create, Chapter) %>
+      <%= link_to "Add Chapter", new_school_course_chapter_path(@school, @course), 
+          class: "btn btn-outline-primary" %>
+    <% end %>
+  </div>
+  
+  <% if @chapters.any? %>
+    <div class="accordion" id="chaptersAccordion">
+      <% @chapters.each_with_index do |chapter, index| %>
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button <%= 'collapsed' unless index == 0 %>" 
+                    type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#chapter<%= chapter.id %>"
+                    aria-expanded="<%= index == 0 ? 'true' : 'false' %>">
+              <div class="d-flex justify-content-between w-100 me-3">
+                <span>
+                  <strong>Chapter <%= chapter.order %>:</strong> <%= chapter.title %>
+                </span>
+                <small class="text-muted">
+                  <%= pluralize(chapter.course_contents.count, 'resource') %>
+                </small>
+              </div>
+            </button>
+          </h2>
+          <div id="chapter<%= chapter.id %>" 
+               class="accordion-collapse collapse <%= 'show' if index == 0 %>" 
+               data-bs-parent="#chaptersAccordion">
+            <div class="accordion-body">
+              <% if chapter.description.present? %>
+                <p class="text-muted mb-3"><%= chapter.description %></p>
+              <% end %>
+              
+              <% if chapter.course_contents.any? %>
+                <div class="list-group list-group-flush">
+                  <% chapter.course_contents.each do |content| %>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="mb-1"><%= content.title %></h6>
+                        <% if content.description.present? %>
+                          <p class="mb-1 text-muted small"><%= content.description %></p>
+                        <% end %>
+                        <small class="text-info">
+                          <i class="fas fa-<%= content.content_type == 'video' ? 'play' : 'file-alt' %>"></i>
+                          <%= content.content_type&.humanize || 'Resource' %>
+                        </small>
+                      </div>
+                      <div>
+                        <% if @enrolled || current_user.management? || current_user.instructor? %>
+                          <%= link_to "View", 
+                              school_course_chapter_course_content_path(@school, @course, chapter, content),
+                              class: "btn btn-sm btn-outline-primary" %>
+                        <% else %>
+                          <span class="text-muted small">Enroll to access</span>
+                        <% end %>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              <% else %>
+                <p class="text-muted">No content available in this chapter yet.</p>
+                <% if current_user.management? || current_user.instructor? %>
+                  <%= link_to "Add Content", 
+                      new_school_course_chapter_course_content_path(@school, @course, chapter),
+                      class: "btn btn-sm btn-primary" %>
+                <% end %>
+              <% end %>
+              
+              <% if current_user.management? || current_user.instructor? %>
+                <div class="mt-3 pt-3 border-top">
+                  <%= link_to "Edit Chapter", 
+                      edit_school_course_chapter_path(@school, @course, chapter),
+                      class: "btn btn-sm btn-outline-warning me-2" %>
+                  <%= link_to "Add Content", 
+                      new_school_course_chapter_course_content_path(@school, @course, chapter),
+                      class: "btn btn-sm btn-outline-primary" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="text-center py-4">
+      <i class="fas fa-list fa-3x text-muted mb-3"></i>
+      <h5>No Chapters Yet</h5>
+      <p class="text-muted">Course content will appear here once chapters are added.</p>
+      <% if current_user.management? || current_user.instructor? %>
+        <%= link_to "Create First Chapter", 
+            new_school_course_chapter_path(@school, @course),
+            class: "btn btn-primary" %>
+      <% end %>
+    </div>
+  <% end %>
+</div> 

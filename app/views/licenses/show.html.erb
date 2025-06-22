@@ -1,0 +1,357 @@
+<% content_for :title, @license.name %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-key"></i> <%= @license.name %></h1>
+  
+  <% if current_user.management? %>
+    <div class="btn-group">
+      <%= link_to "Edit License", edit_school_term_license_path(@license.term.school, @license.term, @license), class: "btn btn-warning" %>
+      <%= link_to "All Licenses", licenses_path, class: "btn btn-outline-primary" %>
+    </div>
+  <% end %>
+</div>
+
+<!-- License Status Alert -->
+<% if @license.expired? %>
+  <div class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>License Expired!</strong> This license expired on <%= @license.expires_at.strftime("%B %d, %Y") %>.
+  </div>
+<% elsif @available_seats <= 0 %>
+  <div class="alert alert-warning">
+    <i class="fas fa-users"></i>
+    <strong>No Seats Available!</strong> This license has reached its maximum capacity.
+  </div>
+<% end %>
+
+<!-- License Details Card -->
+<div class="row mb-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> License Details</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Basic Information</h6>
+            <table class="table table-sm">
+              <tr>
+                <td><strong>Name:</strong></td>
+                <td><%= @license.name %></td>
+              </tr>
+              <tr>
+                <td><strong>Type:</strong></td>
+                <td>
+                  <span class="badge bg-<%= @license.license_type == 'standard' ? 'primary' : @license.license_type == 'premium' ? 'warning' : @license.license_type == 'enterprise' ? 'info' : 'success' %>">
+                    <%= @license.license_type.humanize %>
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Term:</strong></td>
+                <td><%= @license.licensable.name if @license.licensable_type == 'Term' %></td>
+              </tr>
+              <tr>
+                <td><strong>Price:</strong></td>
+                <td class="text-success"><strong>$<%= number_with_precision(@license.price, precision: 2) %></strong></td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="col-md-6">
+            <h6>Usage & Availability</h6>
+            <table class="table table-sm">
+              <tr>
+                <td><strong>Max Seats:</strong></td>
+                <td><%= @license.max_seats %></td>
+              </tr>
+              <tr>
+                <td><strong>Used Seats:</strong></td>
+                <td><%= @license.students.count %></td>
+              </tr>
+              <tr>
+                <td><strong>Available Seats:</strong></td>
+                <td class="<%= @available_seats > 0 ? 'text-success' : 'text-danger' %>">
+                  <strong><%= @available_seats %></strong>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Utilization:</strong></td>
+                <td>
+                  <% utilization = (@license.students.count.to_f / @license.max_seats * 100).round(1) %>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-<%= utilization > 90 ? 'danger' : utilization > 70 ? 'warning' : 'success' %>" 
+                         role="progressbar" 
+                         style="width: <%= utilization %>%"
+                         aria-valuenow="<%= utilization %>" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                      <%= utilization %>%
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        
+        <% if @license.description.present? %>
+          <hr>
+          <h6>Description</h6>
+          <p class="text-muted"><%= @license.description %></p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Quick Stats -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6><i class="fas fa-chart-bar"></i> Quick Stats</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6">
+            <h4 class="text-primary"><%= @license.students.count %></h4>
+            <small>Active Users</small>
+          </div>
+          <div class="col-6">
+            <h4 class="text-success">$<%= number_with_precision(@license.payments.sum(:amount), precision: 0) %></h4>
+            <small>Revenue</small>
+          </div>
+        </div>
+        <hr>
+        <div class="text-center">
+          <h5 class="<%= @license.expired? ? 'text-danger' : 'text-success' %>">
+            <%= @license.valid_until_display %>
+          </h5>
+          <small class="text-muted">
+            <%= @license.lifetime? ? 'Lifetime Access' : 'Expires' %>
+          </small>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-cogs"></i> Actions</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <% if current_user.student? && @license.seats_available? && !@license.expired? %>
+            <% existing_access = @license.license_accesses.find_by(student: current_user) %>
+            <% if existing_access %>
+              <div class="alert alert-info">
+                <i class="fas fa-check-circle"></i>
+                <strong>Already Purchased!</strong> 
+                You have <%= existing_access.status %> access to this license.
+                <% if existing_access.purchased_at %>
+                  <br><small>Purchased on <%= existing_access.purchased_at.strftime("%B %d, %Y at %I:%M %p") %></small>
+                <% end %>
+              </div>
+            <% else %>
+              <!-- Payment Method Selection Form -->
+              <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                  <h6 class="mb-0"><i class="fas fa-credit-card"></i> Purchase License</h6>
+                </div>
+                <div class="card-body">
+                  <%= form_with url: purchase_school_term_license_path(@license.licensable.school, @license.licensable, @license), 
+                                method: :post, 
+                                local: true,
+                                class: "license-purchase-form" do |form| %>
+                    
+                    <div class="mb-3">
+                      <label class="form-label"><strong>Payment Method</strong></label>
+                      <div class="row">
+                        <% if @license.price > 0 %>
+                          <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "credit_card", checked: true, class: "form-check-input", id: "payment_credit_card" %>
+                              <label class="form-check-label" for="payment_credit_card">
+                                <i class="fab fa-cc-visa"></i> Credit Card
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "debit_card", class: "form-check-input", id: "payment_debit_card" %>
+                              <label class="form-check-label" for="payment_debit_card">
+                                <i class="fas fa-credit-card"></i> Debit Card
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "bank_transfer", class: "form-check-input", id: "payment_bank_transfer" %>
+                              <label class="form-check-label" for="payment_bank_transfer">
+                                <i class="fas fa-university"></i> Bank Transfer
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "paypal", class: "form-check-input", id: "payment_paypal" %>
+                              <label class="form-check-label" for="payment_paypal">
+                                <i class="fab fa-paypal"></i> PayPal
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "stripe", class: "form-check-input", id: "payment_stripe" %>
+                              <label class="form-check-label" for="payment_stripe">
+                                <i class="fab fa-stripe"></i> Stripe
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "cash", class: "form-check-input", id: "payment_cash" %>
+                              <label class="form-check-label" for="payment_cash">
+                                <i class="fas fa-money-bill"></i> Cash
+                              </label>
+                            </div>
+                          </div>
+                        <% else %>
+                          <div class="col-12">
+                            <div class="form-check">
+                              <%= form.radio_button :payment_method, "free", checked: true, class: "form-check-input", id: "payment_free" %>
+                              <label class="form-check-label" for="payment_free">
+                                <i class="fas fa-gift"></i> Free License
+                              </label>
+                            </div>
+                          </div>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <div class="bg-light p-3 rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <span><strong>Total Amount:</strong></span>
+                          <span class="h5 text-success mb-0">
+                            <strong>$<%= number_with_precision(@license.price, precision: 2) %></strong>
+                          </span>
+                        </div>
+                        <% if @license.price == 0 %>
+                          <small class="text-muted">This is a free license - no payment required.</small>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="terms_agreement" required>
+                        <label class="form-check-label" for="terms_agreement">
+                          I agree to the <a href="#" target="_blank">Terms and Conditions</a>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="d-grid">
+                      <%= form.submit "Purchase License - $#{number_with_precision(@license.price, precision: 2)}", 
+                                      class: "btn btn-success btn-lg",
+                                      data: { 
+                                        confirm: "Confirm purchase of #{@license.name} for $#{@license.price}?",
+                                        disable_with: "Processing..."
+                                      } %>
+                    </div>
+
+                    <div class="mt-3">
+                      <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        <% if @license.price > 0 %>
+                          Your payment will be processed securely. You will receive access once payment is confirmed.
+                        <% else %>
+                          You will receive immediate access to this free license.
+                        <% end %>
+                      </small>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          <% elsif current_user.management? %>
+            <%= link_to "Edit License", 
+                edit_school_term_license_path(@license.licensable.school, @license.licensable, @license), 
+                class: "btn btn-warning" %>
+            <%= link_to "View Term", 
+                school_term_path(@license.licensable.school, @license.licensable), 
+                class: "btn btn-outline-info" %>
+          <% end %>
+          
+          <%= link_to "View All Licenses", licenses_path, class: "btn btn-outline-primary" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Enrolled Students -->
+<% if current_user.management? && @enrolled_students.any? %>
+  <div class="card">
+    <div class="card-header">
+      <h5><i class="fas fa-users"></i> Enrolled Students (<%= @enrolled_students.count %>)</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th>Student</th>
+              <th>Email</th>
+              <th>Enrolled Date</th>
+              <th>Payment Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @enrolled_students.each do |student| %>
+              <% access = student.license_accesses.find_by(license: @license) %>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar me-2">
+                      <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
+                           style="width: 32px; height: 32px; font-size: 14px;">
+                        <%= student.first_name[0] %><%= student.last_name[0] %>
+                      </div>
+                    </div>
+                    <strong><%= student.full_name %></strong>
+                  </div>
+                </td>
+                <td><%= student.email %></td>
+                <td><%= access&.created_at&.strftime("%b %d, %Y") || "N/A" %></td>
+                <td>
+                  <% payment = student.payments.find_by(payable: @license) %>
+                  <% if payment %>
+                    <span class="badge bg-success">Paid $<%= payment.amount %></span>
+                  <% elsif @license.price == 0 %>
+                    <span class="badge bg-info">Free</span>
+                  <% else %>
+                    <span class="badge bg-warning">Pending</span>
+                  <% end %>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <%= link_to "View Profile", school_user_path(@license.licensable.school, student), class: "btn btn-outline-primary btn-sm" %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% elsif @enrolled_students.empty? %>
+  <div class="text-center py-5">
+    <i class="fas fa-users fa-4x text-muted mb-3"></i>
+    <h4>No Students Enrolled</h4>
+    <p class="text-muted">This license hasn't been purchased by any students yet.</p>
+  </div>
+<% end %>

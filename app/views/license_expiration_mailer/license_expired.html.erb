@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f8f9fa; }
+    .alert { background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .button { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>License Expired</h1>
+    </div>
+    
+    <div class="content">
+      <h2>Hello <%= @student.first_name %>,</h2>
+      
+      <div class="alert">
+        <h3>⚠️ Your license has expired!</h3>
+        <p>Your license for <strong><%= @term.name %></strong> expired on <strong><%= @license.expires_at.strftime("%B %d, %Y at %I:%M %p") %></strong>.</p>
+      </div>
+      
+      <h3>What this means:</h3>
+      <ul>
+        <li>❌ Your access to course materials has been suspended</li>
+        <li>❌ You can no longer submit assignments</li>
+        <li>❌ Discussion forum access is restricted</li>
+        <li>❌ Progress tracking is paused</li>
+      </ul>
+      
+      <h3>To restore your access:</h3>
+      <ol>
+        <li><strong>Renew your license</strong> - Purchase the same license again to continue where you left off</li>
+        <li><strong>Upgrade to premium</strong> - Get extended access and additional features</li>
+        <li><strong>Purchase lifetime access</strong> - Never worry about expiration again</li>
+      </ol>
+      
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="<%= school_term_url(@term.school, @term) %>" class="button">Renew Your License</a>
+      </p>
+      
+      <p><strong>License Details:</strong></p>
+      <ul>
+        <li><strong>License:</strong> <%= @license.name %></li>
+        <li><strong>Term:</strong> <%= @term.name %></li>
+        <li><strong>Price:</strong> $<%= @license.price %></li>
+        <li><strong>Type:</strong> <%= @license.license_type.humanize %></li>
+      </ul>
+      
+      <p>Don't lose your progress! Renew your license to continue your learning journey.</p>
+      
+      <p>If you have any questions or need assistance, please contact our support team.</p>
+      
+      <p>Best regards,<br>
+      The <%= @term.school.name %> Team</p>
+    </div>
+    
+    <div class="footer">
+      <p>This email was sent to <%= @student.email %></p>
+      <p>© <%= Date.current.year %> <%= @term.school.name %>. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html> 

@@ -1,0 +1,213 @@
+<% content_for :title, "Licenses" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-key"></i> Licenses</h1>
+  
+  <% if current_user.management? && @school %>
+    <div class="btn-group">
+      <%= link_to "New License", new_school_term_license_path(@school, @school.terms.first), class: "btn btn-primary" if @school.terms.any? %>
+    </div>
+  <% end %>
+</div>
+
+<!-- License Type and Status Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= form_with url: licenses_path, method: :get, local: true, class: "row g-3" do |form| %>
+      <div class="col-md-3">
+        <%= form.select :license_type, 
+            options_for_select([
+              ['All Types', ''],
+              ['Standard', 'standard'],
+              ['Premium', 'premium'],
+              ['Enterprise', 'enterprise'],
+              ['Lifetime', 'lifetime']
+            ], params[:license_type]), 
+            {}, { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-3">
+        <%= form.select :status, 
+            options_for_select([
+              ['All Licenses', ''],
+              ['Active', 'active'],
+              ['Expired', 'expired'],
+              ['Available', 'available']
+            ], params[:status]), 
+            {}, { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-4">
+        <%= form.text_field :search, 
+            placeholder: "Search licenses...", 
+            value: params[:search],
+            class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= form.submit "Filter", class: "btn btn-outline-primary w-100" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- License Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card bg-primary text-white">
+      <div class="card-body text-center">
+        <h3><%= @licenses.count %></h3>
+        <p class="mb-0">Total Licenses</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body text-center">
+        <h3><%= @licenses.active.count %></h3>
+        <p class="mb-0">Active</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-white">
+      <div class="card-body text-center">
+        <h3><%= @licenses.available.count %></h3>
+        <p class="mb-0">Available</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-danger text-white">
+      <div class="card-body text-center">
+        <h3><%= @licenses.expired.count %></h3>
+        <p class="mb-0">Expired</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Licenses Grid -->
+<% if @licenses.any? %>
+  <div class="row">
+    <% @licenses.each do |license| %>
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 <%= 'border-danger' if license.expired? %>">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><%= license.name %></h6>
+              <span class="badge bg-<%= license.license_type == 'standard' ? 'primary' : license.license_type == 'premium' ? 'warning' : license.license_type == 'enterprise' ? 'info' : 'success' %>">
+                <%= license.license_type.humanize %>
+              </span>
+            </div>
+          </div>
+          
+          <div class="card-body">
+            <p class="card-text text-muted small">
+              <%= truncate(license.description, length: 100) %>
+            </p>
+            
+            <div class="row text-center mb-3">
+                             <div class="col-4">
+                 <strong class="text-success">$<%= number_with_precision(license.price, precision: 0) %></strong><br>
+                 <small class="text-muted">Price</small>
+               </div>
+               <div class="col-4">
+                 <strong class="<%= license.available_seats > 0 ? 'text-success' : 'text-danger' %>">
+                   <%= license.available_seats %>
+                 </strong><br>
+                 <small class="text-muted">Available</small>
+               </div>
+               <div class="col-4">
+                 <strong><%= license.students.count %></strong>/<%= license.max_seats %><br>
+                 <small class="text-muted">Enrolled</small>
+               </div>
+            </div>
+            
+            <div class="mb-2">
+              <small class="text-muted">Term:</small><br>
+              <span class="badge bg-light text-dark"><%= license.term.name %></span>
+            </div>
+            
+            <% if current_user.super_admin? %>
+              <div class="mb-2">
+                <small class="text-muted">School:</small><br>
+                <span class="badge bg-info"><%= license.term.school.name %></span>
+              </div>
+            <% end %>
+            
+            <div class="mb-2">
+              <small class="text-muted">Expires:</small><br>
+              <span class="<%= license.expired? ? 'text-danger' : 'text-success' %>">
+                <%= license.valid_until_display %>
+              </span>
+            </div>
+             
+             <% if current_user.management? %>
+               <div class="mb-2">
+                 <small class="text-muted">Utilization:</small><br>
+                 <% utilization = (license.students.count.to_f / license.max_seats * 100).round(1) %>
+                 <div class="progress" style="height: 16px;">
+                   <div class="progress-bar bg-<%= utilization > 90 ? 'danger' : utilization > 70 ? 'warning' : 'success' %>" 
+                        role="progressbar" 
+                        style="width: <%= utilization %>%"
+                        aria-valuenow="<%= utilization %>" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                     <small><%= utilization %>%</small>
+                   </div>
+                 </div>
+               </div>
+               
+               <div class="mb-2">
+                 <small class="text-muted">Revenue:</small><br>
+                 <span class="text-success">
+                   <strong>$<%= number_with_precision(license.payments.sum(:amount), precision: 0) %></strong>
+                 </span>
+               </div>
+             <% end %>
+          </div>
+          
+          <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+              <%= link_to "View Details", 
+                  license_path(license), 
+                  class: "btn btn-outline-primary btn-sm" %>
+                  
+              <% if current_user.student? && license.seats_available? && !license.expired? %>
+                <%= link_to "Purchase", 
+                    purchase_school_term_license_path(license.term.school, license.term, license), 
+                    method: :post,
+                    class: "btn btn-success btn-sm",
+                    data: { confirm: "Purchase #{license.name} for $#{license.price}?" } %>
+              <% elsif current_user.management? %>
+                <div class="btn-group btn-group-sm">
+                  <%= link_to "Edit", edit_school_term_license_path(license.term.school, license.term, license), 
+                      class: "btn btn-warning btn-sm" %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="text-center py-5">
+    <i class="fas fa-key fa-4x text-muted mb-3"></i>
+    <h3>No Licenses Available</h3>
+    <p class="text-muted">
+      <% if current_user.super_admin? %>
+        No licenses have been created across all schools yet.
+      <% elsif current_user.management? %>
+        Start by creating licenses for your terms.
+      <% else %>
+        Check back later for new license offerings.
+      <% end %>
+    </p>
+    
+    <% if current_user.management? && @school&.terms&.any? %>
+      <%= link_to "Create First License", new_school_term_license_path(@school, @school.terms.first), class: "btn btn-primary" %>
+    <% end %>
+  </div>
+<% end %>

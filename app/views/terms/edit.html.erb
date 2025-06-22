@@ -1,0 +1,107 @@
+<% content_for :title, "Edit #{@term.name}" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to "Terms", school_terms_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @term.name, [@school, @term] %></li>
+    <li class="breadcrumb-item active">Edit</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-edit"></i> Edit Term</h1>
+    <p class="text-muted">Update term information for <%= @term.name %></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Term Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @term], local: true, class: "row g-3" do |form| %>
+          <% if @term.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @term.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-12">
+            <%= form.label :name, class: "form-label" %>
+            <%= form.text_field :name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 3 %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :start_date, class: "form-label" %>
+            <%= form.date_field :start_date, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :end_date, class: "form-label" %>
+            <%= form.date_field :end_date, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Update Term", class: "btn btn-primary" %>
+              <%= link_to "Cancel", [@school, @term], class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Current Term Info</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Name:</strong> <%= @term.name %></p>
+        <p><strong>Start Date:</strong> <%= @term.start_date.strftime("%B %d, %Y") %></p>
+        <p><strong>End Date:</strong> <%= @term.end_date.strftime("%B %d, %Y") %></p>
+        <p><strong>Duration:</strong> <%= pluralize((@term.end_date - @term.start_date).to_i, 'day') %></p>
+        <p><strong>Courses:</strong> <%= @term.courses.count %></p>
+        <p><strong>Status:</strong> 
+          <% if @term.start_date > Date.current %>
+            <span class="badge bg-info">Upcoming</span>
+          <% elsif @term.end_date < Date.current %>
+            <span class="badge bg-secondary">Completed</span>
+          <% else %>
+            <span class="badge bg-success">Active</span>
+          <% end %>
+        </p>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-exclamation-triangle"></i> Warning</h6>
+      </div>
+      <div class="card-body">
+        <p class="small text-muted">
+          Changing term dates may affect course schedules and student enrollments. 
+          Make sure to communicate any changes to affected users.
+        </p>
+      </div>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,115 @@
+<% content_for :title, "New Chapter" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Courses", [@school, :courses] %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <li class="breadcrumb-item active">New Chapter</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-plus"></i> Add New Chapter</h1>
+    <p class="text-muted">Organize your course content with structured chapters</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Chapter Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @course, @chapter], local: true, class: "row g-3" do |form| %>
+          <% if @chapter.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @chapter.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-md-8">
+            <%= form.label :title, class: "form-label" %>
+            <%= form.text_field :title, class: "form-control", 
+                placeholder: "e.g., Introduction to Variables" %>
+          </div>
+          
+          <div class="col-md-4">
+            <%= form.label :order, "Chapter Order", class: "form-label" %>
+            <%= form.number_field :order, class: "form-control", min: 1 %>
+            <div class="form-text">Position in course sequence</div>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4,
+                placeholder: "Describe what students will learn in this chapter..." %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Create Chapter", class: "btn btn-primary" %>
+              <%= link_to "Cancel", [@school, @course], class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Chapter Guidelines</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled">
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Use clear, descriptive titles
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Number chapters logically
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Keep content focused
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Add learning objectives
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-lightbulb"></i> Course: <%= @course.name %></h6>
+      </div>
+      <div class="card-body">
+        <p class="card-text small">Current chapters: <strong><%= @course.chapters.count %></strong></p>
+        <p class="card-text small">Suggested order: <strong><%= @chapter.order %></strong></p>
+        
+        <% if @course.chapters.any? %>
+          <hr>
+          <p class="small mb-1"><strong>Existing chapters:</strong></p>
+          <% @course.chapters.order(:order).each do |chapter| %>
+            <div class="small text-muted">
+              <%= chapter.order %>. <%= chapter.title %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div> 
