@@ -1,0 +1,141 @@
+<% content_for :title, "Add New User" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Users", school_users_path(@school) %></li>
+    <li class="breadcrumb-item active">Add User</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-user-plus"></i> Add New User</h1>
+    <p class="text-muted">Create a new user account for your school</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>User Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @user], local: true, class: "row g-3" do |form| %>
+          <% if @user.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @user.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-md-6">
+            <%= form.label :first_name, class: "form-label" %>
+            <%= form.text_field :first_name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :last_name, class: "form-label" %>
+            <%= form.text_field :last_name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :email, class: "form-label" %>
+            <%= form.email_field :email, class: "form-control", required: true %>
+            <div class="form-text">This will be their login email</div>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :user_type, "Role", class: "form-label" %>
+            <%= form.select :user_type, 
+                options_for_select([
+                  ['Student', 'student'],
+                  ['Instructor', 'instructor'],
+                  ['Management', 'management']
+                ]), 
+                { prompt: "Select a role" }, 
+                { class: "form-select", required: true } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :phone, "Phone (Optional)", class: "form-label" %>
+            <%= form.telephone_field :phone, class: "form-control" %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :bio, "Bio (Optional)", class: "form-label" %>
+            <%= form.text_area :bio, class: "form-control", rows: 3,
+                placeholder: "Brief description about the user..." %>
+          </div>
+          
+          <div class="col-12">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i>
+              <strong>Note:</strong> A temporary password will be automatically generated. 
+              The user will receive login credentials after account creation.
+            </div>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Create User", class: "btn btn-primary" %>
+              <%= link_to "Cancel", school_users_path(@school), class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-users"></i> User Roles</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <h6 class="text-primary">Student</h6>
+          <small class="text-muted">Can enroll in courses and access learning materials</small>
+        </div>
+        
+        <div class="mb-3">
+          <h6 class="text-success">Instructor</h6>
+          <small class="text-muted">Can teach courses, manage content, and view student progress</small>
+        </div>
+        
+        <div class="mb-3">
+          <h6 class="text-warning">Management</h6>
+          <small class="text-muted">Can manage the entire school, users, and all courses</small>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-chart-bar"></i> Current Users</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-4">
+            <h5 class="text-primary"><%= @school.students.count %></h5>
+            <small>Students</small>
+          </div>
+          <div class="col-4">
+            <h5 class="text-success"><%= @school.instructors.count %></h5>
+            <small>Instructors</small>
+          </div>
+          <div class="col-4">
+            <h5 class="text-warning"><%= @school.management_users.count %></h5>
+            <small>Management</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

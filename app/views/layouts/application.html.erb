@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>E-Learning Platform</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="turbo-cache-control" content="no-cache">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+
+  <body>
+    <!-- Navigation -->
+    <% if user_signed_in? %>
+      <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+          <%= link_to "E-Learning Platform", root_path, class: "navbar-brand" %>
+          
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item">
+                <%= link_to "Dashboard", root_path, class: "nav-link #{'active' if current_page?(root_path)}" %>
+              </li>
+              
+              <% if current_user.student? %>
+                <li class="nav-item">
+                  <%= link_to "My Courses", courses_path, class: "nav-link" %>
+                </li>
+                <li class="nav-item">
+                  <%= link_to "Browse Courses", courses_path, class: "nav-link" %>
+                </li>
+                <li class="nav-item">
+                  <%= link_to "Browse Terms", school_terms_path(current_school), class: "nav-link" %>
+                </li>
+                <li class="nav-item">
+                  <%= link_to "Licenses", licenses_path, class: "nav-link" %>
+                </li>
+                <li class="nav-item">
+                  <%= link_to "My Licenses", license_accesses_path, class: "nav-link" %>
+                </li>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    My Enrollments
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><%= link_to "Course Enrollments", enrollments_path, class: "dropdown-item" %></li>
+                    <li><%= link_to "Term Enrollments", enrollments_path(type: 'term'), class: "dropdown-item" %></li>
+                  </ul>
+                </li>
+              <% end %>
+              
+              <% if current_user.instructor? %>
+                <li class="nav-item">
+                  <%= link_to "My Courses", school_courses_path(current_school), class: "nav-link" %>
+                </li>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    Enrollments
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><%= link_to "Course Enrollments", enrollments_path, class: "dropdown-item" %></li>
+                    <li><%= link_to "Term Enrollments", enrollments_path(type: 'term'), class: "dropdown-item" %></li>
+                  </ul>
+                </li>
+              <% end %>
+              
+              <% if current_user.super_admin? %>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-crown"></i> Super Admin
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><%= link_to "All Schools", super_admin_schools_path, class: "dropdown-item" %></li>
+                    <li><%= link_to "Platform Users", super_admin_users_path, class: "dropdown-item" %></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><%= link_to "System Reports", "#", class: "dropdown-item" %></li>
+                  </ul>
+                </li>
+              <% elsif current_user.management? %>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                    School Management
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><%= link_to "School Profile", current_school, class: "dropdown-item" %></li>
+                    <li><%= link_to "Terms", school_terms_path(current_school), class: "dropdown-item" %></li>
+                    <li><%= link_to "Courses", school_courses_path(current_school), class: "dropdown-item" %></li>
+                    <li><%= link_to "Licenses", licenses_path, class: "dropdown-item" %></li>
+                    <li><%= link_to "Users", school_users_path(current_school), class: "dropdown-item" %></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><%= link_to "Course Enrollments", enrollments_path, class: "dropdown-item" %></li>
+                    <li><%= link_to "Term Enrollments", enrollments_path(type: 'term'), class: "dropdown-item" %></li>
+                  </ul>
+                </li>
+              <% end %>
+            </ul>
+            
+            <ul class="navbar-nav">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                  <i class="fas fa-user"></i> <%= current_user.full_name %>
+                </a>
+                <ul class="dropdown-menu">
+                  <li><%= link_to "Profile", profile_path, class: "dropdown-item" %></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <%= button_to "Sign Out", destroy_user_session_path, method: :delete, class: "dropdown-item border-0 bg-transparent", style: "width: 100%; text-align: left;" %>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+    <% end %>
+
+    <!-- Main Content -->
+    <main class="<%= user_signed_in? ? 'container my-4' : 'container-fluid' %>">
+      <!-- Flash Messages -->
+      <% if notice %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= notice %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% end %>
+      
+      <% if alert %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= alert %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% end %>
+      
+      <%= yield %>
+    </main>
+
+    <!-- Footer -->
+    <% if user_signed_in? %>
+      <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+          <p>&copy; <%= Date.current.year %> <%= current_school&.name || "E-Learning Platform" %>. All rights reserved.</p>
+        </div>
+      </footer>
+    <% end %>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

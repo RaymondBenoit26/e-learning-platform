@@ -1,0 +1,155 @@
+<% content_for :title, @course_content.title %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <% if @course_content.chapter %>
+      <li class="breadcrumb-item"><%= link_to @course_content.chapter.title, [@school, @course, @course_content.chapter] %></li>
+    <% end %>
+    <li class="breadcrumb-item active"><%= @course_content.title %></li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1><i class="fas fa-file-alt"></i> <%= @course_content.title %></h1>
+    <p class="text-muted mb-0">
+      <%= @course_content.content_type&.humanize %> • 
+      Added <%= time_ago_in_words(@course_content.created_at) %> ago
+    </p>
+  </div>
+  
+  <% if can_manage_content? %>
+    <div class="btn-group">
+      <%= link_to "Edit", edit_school_course_chapter_course_content_path(@school, @course, @course_content.chapter, @course_content), class: "btn btn-outline-primary" %>
+      <%= link_to "Delete", school_course_chapter_course_content_path(@school, @course, @course_content.chapter, @course_content), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this content?" } %>
+    </div>
+  <% end %>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <!-- Content Details -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> Content Information</h5>
+      </div>
+      <div class="card-body">
+        <% if @course_content.description.present? %>
+          <p class="card-text"><%= @course_content.description %></p>
+        <% end %>
+        
+        <dl class="row">
+          <dt class="col-sm-3">Content Type:</dt>
+          <dd class="col-sm-9">
+            <span class="badge bg-<%= content_type_color(@course_content.content_type) %>">
+              <%= @course_content.content_type&.humanize || 'General' %>
+            </span>
+          </dd>
+          
+          <% if @course_content.chapter %>
+            <dt class="col-sm-3">Chapter:</dt>
+            <dd class="col-sm-9">
+              <%= link_to @course_content.chapter.title, [@school, @course, @course_content.chapter], class: "text-decoration-none" %>
+            </dd>
+          <% end %>
+          
+          <dt class="col-sm-3">Created:</dt>
+          <dd class="col-sm-9"><%= @course_content.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          
+          <% if @course_content.updated_at != @course_content.created_at %>
+            <dt class="col-sm-3">Updated:</dt>
+            <dd class="col-sm-9"><%= @course_content.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+    
+    <!-- File Attachment -->
+    <% if @course_content.file.attached? %>
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5><i class="fas fa-paperclip"></i> Attached File</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center p-3 border rounded">
+            <i class="fas fa-file fa-2x text-primary me-3"></i>
+            <div class="flex-grow-1">
+              <h6 class="mb-1"><%= @course_content.file.filename %></h6>
+              <small class="text-muted">
+                <%= number_to_human_size(@course_content.file.byte_size) %> • 
+                <%= @course_content.file.content_type %>
+              </small>
+            </div>
+            <div class="btn-group">
+              <%= link_to "Download", rails_blob_path(@course_content.file, disposition: "attachment"), 
+                  class: "btn btn-primary btn-sm" %>
+              <%= link_to "View", rails_blob_path(@course_content.file), 
+                  class: "btn btn-outline-secondary btn-sm",
+                  target: "_blank" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    
+    <!-- Content Preview -->
+    <% if @course_content.content_type == 'document' && @course_content.file.attached? %>
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-eye"></i> Content Preview</h5>
+        </div>
+        <div class="card-body">
+          <div class="ratio ratio-16x9">
+            <iframe src="<%= rails_blob_path(@course_content.file) %>" 
+                    class="border rounded"
+                    allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Course Information -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6><i class="fas fa-book"></i> Course Information</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Course:</strong> <%= link_to @course.name, [@school, @course], class: "text-decoration-none" %></p>
+        <p><strong>School:</strong> <%= @school.name %></p>
+        <% if @course.term %>
+          <p><strong>Term:</strong> <%= @course.term.name %></p>
+        <% end %>
+        <p><strong>Total Content:</strong> <%= @course.course_contents.count %></p>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-arrow-left"></i> Navigation</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <%= link_to "Back to Course", [@school, @course], class: "btn btn-outline-primary btn-sm" %>
+          <% if @course_content.chapter %>
+            <%= link_to "View Chapter", [@school, @course, @course_content.chapter], class: "btn btn-outline-secondary btn-sm" %>
+          <% end %>
+          <%= link_to "All Course Content", [@school, @course], class: "btn btn-outline-info btn-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% content_for :styles do %>
+  <style>
+    .content-type-badge {
+      font-size: 0.8em;
+    }
+  </style>
+<% end %> 

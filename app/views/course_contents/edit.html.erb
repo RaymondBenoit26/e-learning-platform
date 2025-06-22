@@ -1,0 +1,139 @@
+<% content_for :title, "Edit #{@course_content.title}" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <% if @course_content.chapter %>
+      <li class="breadcrumb-item"><%= link_to @course_content.chapter.title, [@school, @course, @course_content.chapter] %></li>
+    <% end %>
+    <li class="breadcrumb-item"><%= link_to @course_content.title, [@school, @course, @course_content.chapter, @course_content] %></li>
+    <li class="breadcrumb-item active">Edit</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-edit"></i> Edit Content</h1>
+    <p class="text-muted">Update the content information and files</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Edit Content Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @course, @course_content.chapter, @course_content], local: true, class: "row g-3" do |form| %>
+          <% if @course_content.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @course_content.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-12">
+            <%= form.label :title, class: "form-label" %>
+            <%= form.text_field :title, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 4,
+                placeholder: "Describe this content..." %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :content_type, class: "form-label" %>
+            <%= form.select :content_type, 
+                options_for_select([
+                  ['Document', 'document'],
+                  ['Video', 'video'],
+                  ['Audio', 'audio'],
+                  ['Image', 'image'],
+                  ['Link', 'link'],
+                  ['General', 'general']
+                ], @course_content.content_type),
+                { prompt: 'Select content type' },
+                { class: "form-select" } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :chapter_id, "Chapter (Optional)", class: "form-label" %>
+            <%= form.select :chapter_id,
+                options_from_collection_for_select(@course.chapters, :id, :title, @course_content.chapter_id),
+                { prompt: 'Select a chapter (optional)' },
+                { class: "form-select" } %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :file, "File (Optional)", class: "form-label" %>
+            <% if @course_content.file.attached? %>
+              <div class="mb-2">
+                <small class="text-muted">Current file: <%= @course_content.file.filename %></small>
+                <br>
+                <small class="text-muted">Upload a new file to replace the current one</small>
+              </div>
+            <% end %>
+            <%= form.file_field :file, class: "form-control" %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Update Content", class: "btn btn-primary" %>
+              <%= link_to "Cancel", [@school, @course, @course_content.chapter, @course_content], class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Content Information</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Course:</strong> <%= @course.name %></p>
+        <p><strong>School:</strong> <%= @school.name %></p>
+        <% if @course_content.chapter %>
+          <p><strong>Chapter:</strong> <%= @course_content.chapter.title %></p>
+        <% end %>
+        <p><strong>Created:</strong> <%= @course_content.created_at.strftime("%B %d, %Y") %></p>
+        <p><strong>Last Updated:</strong> <%= @course_content.updated_at.strftime("%B %d, %Y") %></p>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-lightbulb"></i> Tips</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled small">
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Use descriptive titles
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Add helpful descriptions
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Choose appropriate content types
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,155 @@
+<% content_for :title, "Edit User" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Users", school_users_path(@school) %></li>
+    <li class="breadcrumb-item active">Edit <%= @user.full_name %></li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-user-edit"></i> Edit User</h1>
+    <p class="text-muted">Update user information and settings</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>User Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @user], local: true, class: "row g-3" do |form| %>
+          <% if @user.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @user.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-md-6">
+            <%= form.label :first_name, class: "form-label" %>
+            <%= form.text_field :first_name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :last_name, class: "form-label" %>
+            <%= form.text_field :last_name, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :email, class: "form-label" %>
+            <%= form.email_field :email, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :user_type, "Role", class: "form-label" %>
+            <%= form.select :user_type, 
+                options_for_select([
+                  ['Student', 'student'],
+                  ['Instructor', 'instructor'],
+                  ['Management', 'management']
+                ], @user.user_type), 
+                {}, 
+                { class: "form-select", required: true } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :phone, "Phone (Optional)", class: "form-label" %>
+            <%= form.telephone_field :phone, class: "form-control" %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :bio, "Bio (Optional)", class: "form-label" %>
+            <%= form.text_area :bio, class: "form-control", rows: 3 %>
+          </div>
+          
+          <div class="col-12">
+            <hr>
+            <h6>Password (Leave blank to keep current password)</h6>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :password, "New Password", class: "form-label" %>
+            <%= form.password_field :password, class: "form-control", autocomplete: "new-password" %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :password_confirmation, "Confirm Password", class: "form-label" %>
+            <%= form.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Update User", class: "btn btn-primary" %>
+              <%= link_to "Cancel", school_users_path(@school), class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> User Details</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Current Role:</strong> <span class="badge bg-<%= @user.student? ? 'primary' : @user.instructor? ? 'success' : 'warning' %>"><%= @user.user_type.humanize %></span></p>
+        <p><strong>Member Since:</strong> <%= @user.created_at.strftime("%B %Y") %></p>
+        <p><strong>Last Updated:</strong> <%= @user.updated_at.strftime("%B %d, %Y") %></p>
+        
+        <% if @user.student? %>
+          <hr>
+          <p><strong>Enrollments:</strong> <%= @user.enrollments.count %></p>
+        <% elsif @user.instructor? %>
+          <hr>
+          <p><strong>Assigned Courses:</strong> <%= @user.assigned_courses.count %></p>
+        <% end %>
+      </div>
+    </div>
+    
+    <% if @user.student? && @user.enrollments.any? %>
+      <div class="card mt-3">
+        <div class="card-header">
+          <h6><i class="fas fa-graduation-cap"></i> Current Courses</h6>
+        </div>
+        <div class="card-body">
+          <% @user.courses.limit(3).each do |course| %>
+            <div class="small mb-2">
+              <%= link_to course.name, [course.school, course], class: "text-decoration-none" %>
+            </div>
+          <% end %>
+          <% if @user.courses.count > 3 %>
+            <small class="text-muted">... and <%= @user.courses.count - 3 %> more</small>
+          <% end %>
+        </div>
+      </div>
+    <% elsif @user.instructor? && @user.assigned_courses.any? %>
+      <div class="card mt-3">
+        <div class="card-header">
+          <h6><i class="fas fa-chalkboard-teacher"></i> Teaching</h6>
+        </div>
+        <div class="card-body">
+          <% @user.assigned_courses.limit(3).each do |course| %>
+            <div class="small mb-2">
+              <%= link_to course.name, [course.school, course], class: "text-decoration-none" %>
+            </div>
+          <% end %>
+          <% if @user.assigned_courses.count > 3 %>
+            <small class="text-muted">... and <%= @user.assigned_courses.count - 3 %> more</small>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div> 

@@ -1,0 +1,106 @@
+<% content_for :title, "New Term" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to "Terms", school_terms_path(@school) %></li>
+    <li class="breadcrumb-item active">New Term</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-plus"></i> Create New Term</h1>
+    <p class="text-muted">Add a new academic term for <%= @school.name %></p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5>Term Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @term], local: true, class: "row g-3" do |form| %>
+          <% if @term.errors.any? %>
+            <div class="col-12">
+              <div class="alert alert-danger">
+                <h6>Please fix the following errors:</h6>
+                <ul class="mb-0">
+                  <% @term.errors.full_messages.each do |message| %>
+                    <li><%= message %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% end %>
+          
+          <div class="col-12">
+            <%= form.label :name, class: "form-label" %>
+            <%= form.text_field :name, class: "form-control", required: true, placeholder: "e.g., Fall 2024, Spring 2025..." %>
+          </div>
+          
+          <div class="col-12">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, class: "form-control", rows: 3,
+                placeholder: "Optional description of this term..." %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :start_date, class: "form-label" %>
+            <%= form.date_field :start_date, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= form.label :end_date, class: "form-label" %>
+            <%= form.date_field :end_date, class: "form-control", required: true %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex gap-2">
+              <%= form.submit "Create Term", class: "btn btn-primary" %>
+              <%= link_to "Cancel", school_terms_path(@school), class: "btn btn-outline-secondary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> School Information</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>School:</strong> <%= @school.name %></p>
+        <p><strong>Total Terms:</strong> <%= @school.terms.count %></p>
+        <p><strong>Active Terms:</strong> <%= @school.terms.where('start_date <= ? AND end_date >= ?', Date.current, Date.current).count %></p>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-lightbulb"></i> Tips</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled small">
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Use clear, descriptive names
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            Ensure dates don't overlap
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            End date should be after start date
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div> 

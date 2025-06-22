@@ -1,0 +1,152 @@
+<% content_for :title, "Super Admin - Schools Management" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-university"></i> Schools Management</h1>
+  <div class="btn-group">
+    <%= link_to "New School", new_super_admin_school_path, class: "btn btn-primary" %>
+  </div>
+</div>
+
+<!-- Platform Statistics Cards -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card text-center border-primary">
+      <div class="card-body">
+        <h2 class="text-primary"><%= @total_schools %></h2>
+        <p class="card-text">Total Schools</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center border-success">
+      <div class="card-body">
+        <h2 class="text-success"><%= @total_students %></h2>
+        <p class="card-text">Total Students</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center border-warning">
+      <div class="card-body">
+        <h2 class="text-warning"><%= @total_instructors %></h2>
+        <p class="card-text">Total Instructors</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center border-info">
+      <div class="card-body">
+        <h2 class="text-info"><%= @total_courses %></h2>
+        <p class="card-text">Total Courses</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5><i class="fas fa-search"></i> Search & Filter Schools</h5>
+  </div>
+  <div class="card-body">
+    <%= search_form_for @q, url: super_admin_schools_path, local: true, class: "row g-3" do |f| %>
+      <div class="col-md-4">
+        <%= f.label :name_cont, "School Name", class: "form-label" %>
+        <%= f.search_field :name_cont, class: "form-control", placeholder: "Search by name..." %>
+      </div>
+      <div class="col-md-3">
+        <%= f.label :city_cont, "City", class: "form-label" %>
+        <%= f.search_field :city_cont, class: "form-control", placeholder: "Search by city..." %>
+      </div>
+      <div class="col-md-3">
+        <%= f.label :state_cont, "State", class: "form-label" %>
+        <%= f.search_field :state_cont, class: "form-control", placeholder: "Search by state..." %>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <%= f.submit "Search", class: "btn btn-primary me-2" %>
+        <%= link_to "Clear", super_admin_schools_path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Schools List -->
+<div class="card">
+  <div class="card-header">
+    <h5><i class="fas fa-list"></i> Schools (<%= @schools.count %>)</h5>
+  </div>
+  <div class="card-body">
+    <% if @schools.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>School Name</th>
+              <th>Location</th>
+              <th>Contact</th>
+              <th>Users</th>
+              <th>Courses</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @schools.each do |school| %>
+              <tr>
+                <td>
+                  <strong><%= link_to school.name, super_admin_school_path(school), class: "text-decoration-none" %></strong>
+                  <% if school.website.present? %>
+                    <br><small><a href="<%= school.website %>" target="_blank" class="text-muted"><%= school.website %></a></small>
+                  <% end %>
+                </td>
+                <td>
+                  <%= school.city %>, <%= school.state %>
+                  <% if school.address.present? %>
+                    <br><small class="text-muted"><%= school.address %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <% if school.email.present? %>
+                    <a href="mailto:<%= school.email %>"><%= school.email %></a><br>
+                  <% end %>
+                  <% if school.phone.present? %>
+                    <small class="text-muted"><%= school.phone %></small>
+                  <% end %>
+                </td>
+                <td>
+                  <span class="badge bg-success"><%= school.users.students.count %> Students</span><br>
+                  <span class="badge bg-warning"><%= school.users.instructors.count %> Instructors</span><br>
+                  <span class="badge bg-info"><%= school.users.management.count %> Admins</span>
+                </td>
+                <td>
+                  <span class="badge bg-primary"><%= school.courses.count %> Courses</span><br>
+                  <span class="badge bg-secondary"><%= school.terms.count %> Terms</span>
+                </td>
+                <td>
+                  <%= time_ago_in_words(school.created_at) %> ago
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <%= link_to "View", super_admin_school_path(school), class: "btn btn-outline-info btn-sm" %>
+                    <%= link_to "Edit", edit_super_admin_school_path(school), class: "btn btn-outline-warning btn-sm" %>
+                    <%= link_to "Delete", super_admin_school_path(school), 
+                        method: :delete, 
+                        class: "btn btn-outline-danger btn-sm", 
+                        data: { confirm: "Are you sure? This will permanently delete the school and all associated data." } %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-center py-5">
+        <i class="fas fa-university fa-3x text-muted mb-3"></i>
+        <h5>No schools found</h5>
+        <p class="text-muted">Get started by creating your first school.</p>
+        <%= link_to "Create School", new_super_admin_school_path, class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div> 

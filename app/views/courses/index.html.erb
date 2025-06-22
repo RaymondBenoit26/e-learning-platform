@@ -1,0 +1,144 @@
+<% content_for :title, "Courses" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-book"></i> Courses</h1>
+  
+  <% if params[:school_id] && (current_user.management? || current_user.instructor?) %>
+    <%= link_to "New Course", new_school_course_path(@school), class: "btn btn-primary" %>
+  <% end %>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= search_form_for @q, local: true, class: "row g-3" do |f| %>
+      <div class="col-md-4">
+        <%= f.label :name_cont, "Course Name", class: "form-label" %>
+        <%= f.search_field :name_cont, placeholder: "Search by course name...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-4">
+        <%= f.label :description_cont, "Description", class: "form-label" %>
+        <%= f.search_field :description_cont, placeholder: "Search in description...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-4">
+        <%= f.label :term_name_cont, "Term", class: "form-label" %>
+        <%= f.search_field :term_name_cont, placeholder: "Search by term...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-4">
+        <%= f.label :instructors_first_name_or_instructors_last_name_cont, "Instructor", class: "form-label" %>
+        <%= f.search_field :instructors_first_name_or_instructors_last_name_cont, 
+            placeholder: "Search by instructor name...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-4">
+        <%= f.label :s, "Sort by", class: "form-label" %>
+        <%= f.select :s, 
+            options_for_select([
+              ['Name (A-Z)', 'name asc'],
+              ['Name (Z-A)', 'name desc'],
+              ['Newest First', 'created_at desc'],
+              ['Oldest First', 'created_at asc'],
+              ['Most Students', 'students_count desc'],
+              ['Fewest Students', 'students_count asc']
+            ], params.dig(:q, :s)), 
+            { include_blank: "Default Order" }, 
+            { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-4 d-flex align-items-end">
+        <%= f.submit "Search", class: "btn btn-primary me-2" %>
+        <%= link_to "Clear", request.path, class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @courses.any? %>
+  <div class="row">
+    <% @courses.each do |course| %>
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <%= course.name %>
+              <% if current_user.student? && @enrolled_course_ids&.include?(course.id) %>
+                <span class="badge bg-success ms-2">Enrolled</span>
+              <% end %>
+            </h5>
+            
+            <p class="card-text text-muted">
+              <%= truncate(course.description, length: 120) %>
+            </p>
+            
+            <div class="row text-center text-muted">
+              <div class="col-4">
+                <i class="fas fa-list"></i><br>
+                <small><%= pluralize(course.chapters.count, 'chapter') %></small>
+              </div>
+              <div class="col-4">
+                <i class="fas fa-users"></i><br>
+                <small><%= pluralize(course.students.count, 'student') %></small>
+              </div>
+              <div class="col-4">
+                <i class="fas fa-chalkboard-teacher"></i><br>
+                <small><%= pluralize(course.instructors.count, 'instructor') %></small>
+              </div>
+            </div>
+            
+            <% if course.instructors.any? %>
+              <div class="mt-3">
+                <small class="text-muted">Instructors:</small><br>
+                <% course.instructors.each do |instructor| %>
+                  <span class="badge bg-light text-dark me-1"><%= instructor.full_name %></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+          
+          <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+              <%= link_to "View Details", 
+                  params[:school_id] ? [course.school, course] : course, 
+                  class: "btn btn-outline-primary btn-sm" %>
+                  
+              <% if current_user.student? %>
+                <% if @enrolled_course_ids&.include?(course.id) %>
+                  <span class="text-success"><i class="fas fa-check"></i> Enrolled</span>
+                <% else %>
+                  <%= link_to "Enroll", enroll_course_path(course), 
+                      method: :post, 
+                      class: "btn btn-success btn-sm",
+                      data: { confirm: "Are you sure you want to enroll in this course?" } %>
+                <% end %>
+              <% elsif current_user.management? || current_user.instructor? %>
+                <%= link_to "Edit", edit_school_course_path(course.school, course), 
+                    class: "btn btn-warning btn-sm" %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="text-center py-5">
+    <i class="fas fa-book fa-4x text-muted mb-3"></i>
+    <h3>No Courses Available</h3>
+    <p class="text-muted">
+      <% if current_user.management? %>
+        Start building your curriculum by creating the first course.
+      <% elsif current_user.instructor? %>
+        No courses have been assigned to you yet.
+      <% else %>
+        Check back later for new courses to enroll in.
+      <% end %>
+    </p>
+    
+    <% if params[:school_id] && current_user.management? %>
+      <%= link_to "Create First Course", new_school_course_path(@school), class: "btn btn-primary" %>
+    <% end %>
+  </div>
+<% end %> 

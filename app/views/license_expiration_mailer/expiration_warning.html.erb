@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: #007bff; color: white; padding: 20px; text-align: center; }
+    .content { padding: 20px; background: #f8f9fa; }
+    .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .button { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>License Expiration Warning</h1>
+    </div>
+    
+    <div class="content">
+      <h2>Hello <%= @student.first_name %>,</h2>
+      
+      <p>This is a friendly reminder that your license for <strong><%= @term.name %></strong> will expire in <strong><%= @days_until_expiry %> days</strong>.</p>
+      
+      <div class="warning">
+        <h3>⚠️ Important Information:</h3>
+        <ul>
+          <li><strong>License:</strong> <%= @license.name %></li>
+          <li><strong>Term:</strong> <%= @term.name %></li>
+          <li><strong>Expires:</strong> <%= @license.expires_at.strftime("%B %d, %Y at %I:%M %p") %></li>
+          <li><strong>Price:</strong> $<%= @license.price %></li>
+        </ul>
+      </div>
+      
+      <p>When your license expires, you will lose access to:</p>
+      <ul>
+        <li>Course materials and content</li>
+        <li>Assignments and assessments</li>
+        <li>Discussion forums</li>
+        <li>Progress tracking</li>
+      </ul>
+      
+      <p>To continue your learning journey, you can:</p>
+      <ol>
+        <li><strong>Renew your current license</strong> - Purchase the same license again</li>
+        <li><strong>Upgrade to a premium license</strong> - Get extended access and additional features</li>
+        <li><strong>Purchase a lifetime license</strong> - Never worry about expiration again</li>
+      </ol>
+      
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="<%= school_term_url(@term.school, @term) %>" class="button">View Available Licenses</a>
+      </p>
+      
+      <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+      
+      <p>Best regards,<br>
+      The <%= @term.school.name %> Team</p>
+    </div>
+    
+    <div class="footer">
+      <p>This email was sent to <%= @student.email %></p>
+      <p>© <%= Date.current.year %> <%= @term.school.name %>. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html> 

@@ -1,0 +1,121 @@
+<% content_for :title, "Create New School" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-plus-circle"></i> Create New School</h1>
+  <div class="btn-group">
+    <%= link_to "Back to Schools", super_admin_schools_path, class: "btn btn-outline-secondary" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-university"></i> School Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [:super_admin, @school], local: true do |form| %>
+          <% if @school.errors.any? %>
+            <div class="alert alert-danger">
+              <h6>Please fix the following errors:</h6>
+              <ul class="mb-0">
+                <% @school.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="mb-3">
+            <%= form.label :name, class: "form-label" %>
+            <%= form.text_field :name, class: "form-control", placeholder: "e.g., Springfield University", required: true %>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :address, class: "form-label" %>
+            <%= form.text_area :address, rows: 2, class: "form-control", placeholder: "Street address..." %>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :city, class: "form-label" %>
+                <%= form.text_field :city, class: "form-control", placeholder: "City" %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <%= form.label :state, class: "form-label" %>
+                <%= form.text_field :state, class: "form-control", placeholder: "State" %>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <%= form.label :zip_code, class: "form-label" %>
+                <%= form.text_field :zip_code, class: "form-control", placeholder: "ZIP Code" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :phone, class: "form-label" %>
+                <%= form.telephone_field :phone, class: "form-control", placeholder: "Phone number" %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :email, class: "form-label" %>
+                <%= form.email_field :email, class: "form-control", placeholder: "School email" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :website, class: "form-label" %>
+            <%= form.url_field :website, class: "form-control", placeholder: "https://www.schoolwebsite.com" %>
+          </div>
+
+          <hr>
+          <h6><i class="fas fa-user-shield"></i> Default Administrator Account</h6>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= label_tag "school[admin_first_name]", "Admin First Name", class: "form-label" %>
+                <%= text_field_tag "school[admin_first_name]", "", class: "form-control", placeholder: "First name" %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= label_tag "school[admin_last_name]", "Admin Last Name", class: "form-label" %>
+                <%= text_field_tag "school[admin_last_name]", "", class: "form-control", placeholder: "Last name" %>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= label_tag "school[admin_email]", "Admin Email", class: "form-label" %>
+                <%= email_field_tag "school[admin_email]", "", class: "form-control", placeholder: "admin@school.com", required: true %>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= label_tag "school[admin_password]", "Admin Password", class: "form-label" %>
+                <%= password_field_tag "school[admin_password]", "", class: "form-control", placeholder: "Temporary password", required: true %>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <%= link_to "Cancel", super_admin_schools_path, class: "btn btn-secondary" %>
+            <%= form.submit "Create School", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

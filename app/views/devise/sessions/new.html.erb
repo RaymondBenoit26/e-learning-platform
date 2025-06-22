@@ -1,0 +1,83 @@
+<% content_for :title, "Sign In" %>
+
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card shadow">
+      <div class="card-header bg-primary text-white text-center">
+        <h3><i class="fas fa-graduation-cap"></i> E-Learning Platform</h3>
+        <p class="mb-0">Sign in to your account</p>
+      </div>
+      
+      <div class="card-body p-4">
+        <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+          <% if alert %>
+            <div class="alert alert-danger" role="alert">
+              <%= alert %>
+            </div>
+          <% end %>
+          
+          <div class="mb-3">
+            <%= f.label :email, class: "form-label" %>
+            <%= f.email_field :email, autofocus: true, autocomplete: "email", 
+                class: "form-control", placeholder: "Enter your email" %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :password, class: "form-label" %>
+            <%= f.password_field :password, autocomplete: "current-password", 
+                class: "form-control", placeholder: "Enter your password" %>
+          </div>
+
+          <% if devise_mapping.rememberable? %>
+            <div class="mb-3 form-check">
+              <%= f.check_box :remember_me, class: "form-check-input" %>
+              <%= f.label :remember_me, "Remember me", class: "form-check-label" %>
+            </div>
+          <% end %>
+
+          <div class="d-grid">
+            <%= f.submit "Sign In", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+
+        <hr>
+        
+        <div class="text-center">
+          <% if devise_mapping.registerable? %>
+            <%= link_to "Don't have an account? Sign up", new_registration_path(resource_name), 
+                class: "text-decoration-none" %>
+          <% end %>
+          
+          <% if devise_mapping.recoverable? %>
+            <br>
+            <%= link_to "Forgot your password?", new_password_path(resource_name), 
+                class: "text-decoration-none small" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Demo Information -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> Platform Features</h6>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-4">
+            <i class="fas fa-book fa-2x text-primary mb-2"></i>
+            <small class="d-block">Course Management</small>
+          </div>
+          <div class="col-4">
+            <i class="fas fa-users fa-2x text-success mb-2"></i>
+            <small class="d-block">Student Enrollment</small>
+          </div>
+          <div class="col-4">
+            <i class="fas fa-chart-bar fa-2x text-info mb-2"></i>
+            <small class="d-block">Progress Tracking</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

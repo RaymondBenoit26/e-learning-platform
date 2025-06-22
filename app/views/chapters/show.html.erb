@@ -1,0 +1,144 @@
+<% content_for :title, @chapter.title %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item"><%= link_to @course.name, [@school, @course] %></li>
+    <li class="breadcrumb-item active"><%= @chapter.title %></li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1><i class="fas fa-book-open"></i> <%= @chapter.title %></h1>
+    <p class="text-muted mb-0">
+      Chapter <%= @chapter.order %> • <%= pluralize(@chapter.course_contents.count, 'resource') %>
+    </p>
+  </div>
+  
+  <% if can_manage_content? %>
+    <div class="btn-group">
+      <%= link_to "Edit", edit_school_course_chapter_path(@school, @course, @chapter), class: "btn btn-outline-primary" %>
+      <%= link_to "Delete", school_course_chapter_path(@school, @course, @chapter), method: :delete, class: "btn btn-outline-danger", data: { confirm: "Are you sure you want to delete this chapter?" } %>
+    </div>
+  <% end %>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <!-- Chapter Details -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> Chapter Information</h5>
+      </div>
+      <div class="card-body">
+        <% if @chapter.description.present? %>
+          <p class="card-text"><%= @chapter.description %></p>
+        <% end %>
+        <dl class="row">
+          <dt class="col-sm-3">Position:</dt>
+          <dd class="col-sm-9"><%= @chapter.order %></dd>
+          <dt class="col-sm-3">Created:</dt>
+          <dd class="col-sm-9"><%= @chapter.created_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          <% if @chapter.updated_at != @chapter.created_at %>
+            <dt class="col-sm-3">Updated:</dt>
+            <dd class="col-sm-9"><%= @chapter.updated_at.strftime("%B %d, %Y at %I:%M %p") %></dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+    
+    <!-- Course Contents in this Chapter -->
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5><i class="fas fa-file-alt"></i> Resources in this Chapter</h5>
+        <% if can_manage_content? %>
+          <%= link_to "Add Resource", new_school_course_chapter_course_content_path(@school, @course, @chapter), class: "btn btn-sm btn-primary" %>
+        <% end %>
+      </div>
+      <div class="card-body">
+        <% if @course_contents.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @course_contents.each do |content| %>
+                  <tr>
+                    <td>
+                      <%= link_to content.title, school_course_chapter_course_content_path(@school, @course, @chapter, content), class: "text-decoration-none" %>
+                      <br>
+                      <small class="text-muted"><%= truncate(content.description, length: 60) %></small>
+                    </td>
+                    <td>
+                      <span class="badge bg-<%= content_type_color(content.content_type) %>"><%= content.content_type&.humanize || 'General' %></span>
+                    </td>
+                    <td>
+                      <%= content.created_at.strftime("%b %d, %Y") %>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <%= link_to "View", school_course_chapter_course_content_path(@school, @course, @chapter, content), class: "btn btn-outline-primary btn-sm" %>
+                        <% if can_manage_content? %>
+                          <%= link_to "Edit", edit_school_course_chapter_course_content_path(@school, @course, @chapter, content), class: "btn btn-outline-secondary btn-sm" %>
+                          <%= link_to "Delete", school_course_chapter_course_content_path(@school, @course, @chapter, content), method: :delete, class: "btn btn-outline-danger btn-sm", data: { confirm: "Are you sure?" } %>
+                        <% end %>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <div class="text-center py-4">
+            <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+            <h5>No Resources Yet</h5>
+            <p class="text-muted">No resources have been added to this chapter yet.</p>
+            <% if can_manage_content? %>
+              <%= link_to "Add First Resource", new_school_course_chapter_course_content_path(@school, @course, @chapter), class: "btn btn-primary" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Course Information -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h6><i class="fas fa-book"></i> Course Information</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Course:</strong> <%= link_to @course.name, [@school, @course], class: "text-decoration-none" %></p>
+        <p><strong>School:</strong> <%= @school.name %></p>
+        <% if @course.term %>
+          <p><strong>Term:</strong> <%= @course.term.name %></p>
+        <% end %>
+        <p><strong>Total Chapters:</strong> <%= @course.chapters.count %></p>
+        <p><strong>Total Resources:</strong> <%= @course.course_contents.count %></p>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-arrow-left"></i> Navigation</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <%= link_to "Back to Course", [@school, @course], class: "btn btn-outline-primary btn-sm" %>
+          <%= link_to "All Chapters", [@school, @course], class: "btn btn-outline-info btn-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

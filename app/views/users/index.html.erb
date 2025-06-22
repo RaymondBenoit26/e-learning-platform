@@ -1,0 +1,197 @@
+<% content_for :title, "Users" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-users"></i> School Users</h1>
+  <%= link_to "Add User", new_school_user_path(@school), class: "btn btn-primary" %>
+</div>
+
+<!-- User Type Stats -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card bg-primary text-white">
+      <div class="card-body text-center">
+        <h3><%= @school.students.count %></h3>
+        <p class="mb-0">Students</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-success text-white">
+      <div class="card-body text-center">
+        <h3><%= @school.instructors.count %></h3>
+        <p class="mb-0">Instructors</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-info text-white">
+      <div class="card-body text-center">
+        <h3><%= @school.management_users.count %></h3>
+        <p class="mb-0">Management</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card bg-warning text-white">
+      <div class="card-body text-center">
+        <h3><%= @school.users.count %></h3>
+        <p class="mb-0">Total Users</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <%= search_form_for @q, url: school_users_path(@school), local: true, class: "row g-3" do |f| %>
+      <div class="col-md-3">
+        <%= f.label :first_name_or_last_name_cont, "Name", class: "form-label" %>
+        <%= f.search_field :first_name_or_last_name_cont, 
+            placeholder: "Search by name...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-3">
+        <%= f.label :email_cont, "Email", class: "form-label" %>
+        <%= f.search_field :email_cont, 
+            placeholder: "Search by email...", class: "form-control" %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= f.label :user_type_eq, "User Type", class: "form-label" %>
+        <%= f.select :user_type_eq, 
+            options_for_select([
+              ['Students', 'student'],
+              ['Instructors', 'instructor'],
+              ['Management', 'management']
+            ], params.dig(:q, :user_type_eq)), 
+            { include_blank: "All Types" }, 
+            { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-2">
+        <%= f.label :s, "Sort by", class: "form-label" %>
+        <%= f.select :s, 
+            options_for_select([
+              ['Name (A-Z)', 'first_name asc'],
+              ['Name (Z-A)', 'first_name desc'],
+              ['Email (A-Z)', 'email asc'],
+              ['Email (Z-A)', 'email desc'],
+              ['Newest First', 'created_at desc'],
+              ['Oldest First', 'created_at asc']
+            ], params.dig(:q, :s)), 
+            { include_blank: "Default Order" }, 
+            { class: "form-select" } %>
+      </div>
+      
+      <div class="col-md-2 d-flex align-items-end">
+        <%= f.submit "Search", class: "btn btn-primary me-2" %>
+        <%= link_to "Clear", school_users_path(@school), class: "btn btn-outline-secondary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">
+      <%= @users.count %> Users
+      <% if params.dig(:q, :user_type_eq).present? %>
+        - <%= params.dig(:q, :user_type_eq).humanize %>
+      <% end %>
+      <% if params.dig(:q, :first_name_or_last_name_cont).present? || params.dig(:q, :email_cont).present? %>
+        - Filtered Results
+      <% end %>
+    </h5>
+  </div>
+  
+  <div class="card-body">
+    <% if @users.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Type</th>
+              <th>Contact</th>
+              <th>Activity</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @users.each do |user| %>
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="bg-<%= user.student? ? 'primary' : user.instructor? ? 'success' : 'warning' %> text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                         style="width: 40px; height: 40px;">
+                      <%= user.first_name&.first&.upcase %><%= user.last_name&.first&.upcase %>
+                    </div>
+                    <div>
+                      <strong><%= user.full_name %></strong><br>
+                      <small class="text-muted">Joined <%= user.created_at.strftime("%B %Y") %></small>
+                    </div>
+                  </div>
+                </td>
+                
+                <td>
+                  <span class="badge bg-<%= user.student? ? 'primary' : user.instructor? ? 'success' : 'warning' %>">
+                    <%= user.user_type.humanize %>
+                  </span>
+                </td>
+                
+                <td>
+                  <%= user.email %><br>
+                  <% if user.phone.present? %>
+                    <small class="text-muted"><%= user.phone %></small>
+                  <% end %>
+                </td>
+                
+                <td>
+                  <% if user.student? %>
+                    <small class="text-muted">
+                      <%= pluralize(user.enrollments.count, 'enrollment') %>
+                    </small>
+                  <% elsif user.instructor? %>
+                    <small class="text-muted">
+                      <%= pluralize(user.assigned_courses.count, 'course') %> assigned
+                    </small>
+                  <% else %>
+                    <small class="text-muted">Management</small>
+                  <% end %>
+                </td>
+                
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <%= link_to "Edit", edit_school_user_path(@school, user), 
+                        class: "btn btn-outline-warning btn-sm" %>
+                    <% unless user == current_user %>
+                      <%= link_to "Delete", school_user_path(@school, user), 
+                          method: :delete,
+                          class: "btn btn-outline-danger btn-sm",
+                          data: { confirm: "Are you sure you want to delete #{user.full_name}?" } %>
+                    <% end %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-center py-4">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h5>No Users Found</h5>
+        <p class="text-muted">
+          <% if params.dig(:q, :first_name_or_last_name_cont).present? || params.dig(:q, :email_cont).present? || params.dig(:q, :user_type_eq).present? %>
+            Try adjusting your search or filter criteria.
+          <% else %>
+            Start by adding users to your school.
+          <% end %>
+        </p>
+        <%= link_to "Add First User", new_school_user_path(@school), class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div> 

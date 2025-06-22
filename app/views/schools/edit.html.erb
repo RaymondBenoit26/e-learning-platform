@@ -1,0 +1,97 @@
+<% content_for :title, "Edit School" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Dashboard", root_path %></li>
+    <li class="breadcrumb-item"><%= link_to @school.name, school_path(@school) %></li>
+    <li class="breadcrumb-item active">Edit</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8 mx-auto">
+    <div class="card">
+      <div class="card-header">
+        <h4><i class="fas fa-edit"></i> Edit School Information</h4>
+      </div>
+      
+      <div class="card-body">
+        <%= simple_form_for @school, html: { class: "row g-3" } do |f| %>
+          <div class="col-md-12">
+            <%= f.input :name, 
+                required: true,
+                input_html: { class: "form-control" },
+                wrapper_html: { class: "mb-3" } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= f.input :domain, 
+                label: "School Domain",
+                placeholder: "example.edu",
+                input_html: { class: "form-control" },
+                wrapper_html: { class: "mb-3" } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= f.input :email, 
+                label: "Contact Email",
+                input_html: { class: "form-control" },
+                wrapper_html: { class: "mb-3" } %>
+          </div>
+          
+          <div class="col-md-6">
+            <%= f.input :phone, 
+                label: "Phone Number",
+                input_html: { class: "form-control" },
+                wrapper_html: { class: "mb-3" } %>
+          </div>
+          
+          <div class="col-md-12">
+            <%= f.input :address, 
+                as: :text,
+                input_html: { class: "form-control", rows: 3 },
+                wrapper_html: { class: "mb-3" } %>
+          </div>
+          
+          <div class="col-12">
+            <div class="d-flex justify-content-between">
+              <%= link_to "Cancel", school_path(@school), class: "btn btn-secondary" %>
+              <%= f.submit "Update School", class: "btn btn-primary" %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- School Statistics -->
+<div class="row mt-4">
+  <div class="col-md-8 mx-auto">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-chart-bar"></i> Current School Statistics</h5>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-3">
+            <h4 class="text-primary"><%= @school.students.count %></h4>
+            <small class="text-muted">Students</small>
+          </div>
+          <div class="col-3">
+            <h4 class="text-success"><%= @school.instructors.count %></h4>
+            <small class="text-muted">Instructors</small>
+          </div>
+          <div class="col-3">
+            <h4 class="text-info"><%= @school.courses.count %></h4>
+            <small class="text-muted">Courses</small>
+          </div>
+          <div class="col-3">
+            <h4 class="text-warning"><%= @school.terms.count %></h4>
+            <small class="text-muted">Terms</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

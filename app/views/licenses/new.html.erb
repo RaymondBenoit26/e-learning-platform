@@ -1,0 +1,211 @@
+<% content_for :title, "New License" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-plus-circle"></i> Create New License</h1>
+  <div class="btn-group">
+    <%= link_to "All Licenses", licenses_path, class: "btn btn-outline-primary" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-key"></i> License Information</h5>
+      </div>
+      <div class="card-body">
+        <%= form_with model: [@school, @license.term || @school.terms.first, @license], local: true, class: "needs-validation", novalidate: true do |form| %>
+          <% if @license.errors.any? %>
+            <div class="alert alert-danger">
+              <h6>Please fix the following errors:</h6>
+              <ul class="mb-0">
+                <% @license.errors.full_messages.each do |message| %>
+                  <li><%= message %></li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :name, class: "form-label" %>
+                <%= form.text_field :name, class: "form-control", placeholder: "e.g., Spring 2025 Premium License", required: true %>
+                <div class="invalid-feedback">
+                  Please provide a license name.
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :license_type, class: "form-label" %>
+                <%= form.select :license_type, 
+                    options_for_select([
+                      ['Standard', 'standard'],
+                      ['Premium', 'premium'],
+                      ['Enterprise', 'enterprise'],
+                      ['Lifetime', 'lifetime']
+                    ], @license.license_type), 
+                    { prompt: 'Select license type...' }, 
+                    { class: "form-select", required: true } %>
+                <div class="invalid-feedback">
+                  Please select a license type.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <%= form.label :description, class: "form-label" %>
+            <%= form.text_area :description, rows: 3, class: "form-control", placeholder: "Describe what this license includes..." %>
+            <div class="form-text">Optional: Describe the features and benefits of this license.</div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :term_id, "Term", class: "form-label" %>
+                <%= form.select :term_id, 
+                    options_from_collection_for_select(@terms, :id, :name, @license.licensable_id), 
+                    { prompt: 'Select term...' }, 
+                    { class: "form-select", required: true } %>
+                <div class="invalid-feedback">
+                  Please select a term.
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :price, "Price ($)", class: "form-label" %>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <%= form.number_field :price, step: 0.01, min: 0, class: "form-control", placeholder: "0.00", required: true %>
+                </div>
+                <div class="form-text">Set to 0.00 for free licenses.</div>
+                <div class="invalid-feedback">
+                  Please enter a valid price.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :max_seats, "Maximum Seats", class: "form-label" %>
+                <%= form.number_field :max_seats, min: 1, class: "form-control", placeholder: "100", required: true %>
+                <div class="form-text">Maximum number of students who can use this license.</div>
+                <div class="invalid-feedback">
+                  Please enter the maximum number of seats.
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <%= form.label :expires_at, "Expiration Date", class: "form-label" %>
+                <%= form.datetime_local_field :expires_at, class: "form-control" %>
+                <div class="form-text">Leave empty for lifetime licenses.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <%= link_to "Cancel", licenses_path, class: "btn btn-secondary" %>
+            <%= form.submit "Create License", class: "btn btn-primary" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- License Type Guide -->
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-info-circle"></i> License Types Guide</h6>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="d-flex align-items-center mb-2">
+            <span class="badge bg-primary me-2">Standard</span>
+            <strong>Standard</strong>
+          </div>
+          <small class="text-muted">Basic access to all courses in the term with standard features.</small>
+        </div>
+        
+        <div class="mb-3">
+          <div class="d-flex align-items-center mb-2">
+            <span class="badge bg-warning me-2">Premium</span>
+            <strong>Premium</strong>
+          </div>
+          <small class="text-muted">Enhanced access with additional features like priority support and extra resources.</small>
+        </div>
+        
+        <div class="mb-3">
+          <div class="d-flex align-items-center mb-2">
+            <span class="badge bg-info me-2">Enterprise</span>
+            <strong>Enterprise</strong>
+          </div>
+          <small class="text-muted">Advanced features for organizations with analytics and bulk management.</small>
+        </div>
+        
+        <div class="mb-3">
+          <div class="d-flex align-items-center mb-2">
+            <span class="badge bg-success me-2">Lifetime</span>
+            <strong>Lifetime</strong>
+          </div>
+          <small class="text-muted">Permanent access that never expires (leave expiration date empty).</small>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pricing Tips -->
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-lightbulb"></i> Pricing Tips</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-unstyled">
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            <small>Use $0.00 for scholarship or free licenses</small>
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            <small>Consider offering early bird discounts</small>
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            <small>Premium licenses typically cost 50-100% more than standard</small>
+          </li>
+          <li class="mb-2">
+            <i class="fas fa-check text-success me-2"></i>
+            <small>Lifetime licenses should be 3-5x term price</small>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Bootstrap validation
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    var forms = document.getElementsByClassName('needs-validation');
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>

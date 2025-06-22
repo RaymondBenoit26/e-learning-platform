@@ -1,0 +1,172 @@
+<% content_for :title, "Enrollment Details" %>
+
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><%= link_to "Enrollments", enrollments_path %></li>
+    <li class="breadcrumb-item active">Enrollment Details</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-graduation-cap"></i> Enrollment Information</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row">
+          <dt class="col-sm-3">Student:</dt>
+          <dd class="col-sm-9">
+            <div class="d-flex align-items-center">
+              <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                   style="width: 35px; height: 35px; font-size: 14px;">
+                <%= @enrollment.student.first_name&.first&.upcase %>
+              </div>
+              <div>
+                <strong><%= @enrollment.student.full_name %></strong><br>
+                <small class="text-muted"><%= @enrollment.student.email %></small>
+              </div>
+            </div>
+          </dd>
+          
+          <dt class="col-sm-3">Course:</dt>
+          <dd class="col-sm-9">
+            <% if @enrollment.enrollable.is_a?(Course) %>
+              <%= link_to @enrollment.enrollable.name, [@enrollment.enrollable.school, @enrollment.enrollable], 
+                  class: "text-decoration-none" %><br>
+              <small class="text-muted"><%= @enrollment.enrollable.description %></small>
+            <% end %>
+          </dd>
+          
+          <dt class="col-sm-3">Enrollment Date:</dt>
+          <dd class="col-sm-9">
+            <%= @enrollment.created_at.strftime("%B %d, %Y at %I:%M %p") %><br>
+            <small class="text-muted"><%= time_ago_in_words(@enrollment.created_at) %> ago</small>
+          </dd>
+          
+          <dt class="col-sm-3">Status:</dt>
+          <dd class="col-sm-9">
+            <% case @enrollment.status %>
+            <% when "active" %>
+              <span class="badge bg-success fs-6">Active</span>
+            <% when "pending" %>
+              <span class="badge bg-warning text-dark fs-6">Pending Payment</span>
+            <% when "completed" %>
+              <span class="badge bg-info fs-6">Completed</span>
+            <% when "cancelled" %>
+              <span class="badge bg-danger fs-6">Cancelled</span>
+            <% when "suspended" %>
+              <span class="badge bg-secondary fs-6">Suspended</span>
+            <% else %>
+              <span class="badge bg-secondary fs-6"><%= @enrollment.status&.humanize %></span>
+            <% end %>
+          </dd>
+          
+          <dt class="col-sm-3">Enrollment Type:</dt>
+          <dd class="col-sm-9">
+            <span class="badge bg-<%= @enrollment.enrollment_type == 'free' ? 'success' : 'primary' %>">
+              <%= @enrollment.enrollment_type&.humanize %>
+            </span>
+          </dd>
+          
+          <dt class="col-sm-3">Payment:</dt>
+          <dd class="col-sm-9">
+            <% payment = @enrollment.payments.last %>
+            <% if payment %>
+              <% case payment.status %>
+              <% when "completed" %>
+                <span class="badge bg-success">Paid</span>
+              <% when "pending" %>
+                <span class="badge bg-warning text-dark">Processing</span>
+              <% when "failed" %>
+                <span class="badge bg-danger">Failed</span>
+              <% else %>
+                <span class="badge bg-secondary"><%= payment.status&.humanize %></span>
+              <% end %>
+              - $<%= payment.amount %><br>
+              <small class="text-muted">
+                Payment method: <%= payment.payment_method&.humanize %><br>
+                <% if payment.created_at %>
+                  Payment date: <%= payment.created_at.strftime("%B %d, %Y at %I:%M %p") %>
+                <% end %>
+              </small>
+            <% elsif @enrollment.free? %>
+              <span class="badge bg-success">Free</span> - $0<br>
+              <small class="text-muted">No payment required</small>
+            <% else %>
+              <span class="badge bg-warning text-dark">No Payment Record</span>
+            <% end %>
+          </dd>
+          
+          <% if @enrollment.license_based? && @enrollment.payable.is_a?(License) %>
+            <dt class="col-sm-3">License:</dt>
+            <dd class="col-sm-9">
+              <strong><%= @enrollment.payable.name %></strong><br>
+              <small class="text-muted">
+                Type: <%= @enrollment.payable.license_type&.humanize %><br>
+                <% if @enrollment.payable.expires_at %>
+                  Expires: <%= @enrollment.payable.expires_at.strftime("%B %d, %Y") %>
+                <% else %>
+                  Lifetime license
+                <% end %>
+              </small>
+            </dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6><i class="fas fa-chart-line"></i> Progress Overview</h6>
+      </div>
+      <div class="card-body">
+        <% if @enrollment.enrollable.is_a?(Course) %>
+          <div class="row text-center">
+            <div class="col-6">
+              <h4 class="text-primary"><%= @enrollment.enrollable.chapters.count %></h4>
+              <small class="text-muted">Total Chapters</small>
+            </div>
+            <div class="col-6">
+              <h4 class="text-info"><%= @enrollment.enrollable.course_contents.count %></h4>
+              <small class="text-muted">Resources</small>
+            </div>
+          </div>
+          
+          <hr>
+          
+          <div class="d-grid gap-2">
+            <%= link_to "View Course", [@enrollment.enrollable.school, @enrollment.enrollable], 
+                class: "btn btn-primary btn-sm" %>
+            <% if current_user.student? && @enrollment.student == current_user %>
+              <%= link_to "Unenroll", @enrollment, 
+                  method: :delete,
+                  class: "btn btn-outline-danger btn-sm",
+                  data: { confirm: "Are you sure you want to unenroll from this course?" } %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6><i class="fas fa-users"></i> Course Info</h6>
+      </div>
+      <div class="card-body">
+        <% if @enrollment.enrollable.is_a?(Course) %>
+          <p class="card-text small">
+            <strong>School:</strong> <%= @enrollment.enrollable.school.name %><br>
+            <% if @enrollment.enrollable.term %>
+              <strong>Term:</strong> <%= @enrollment.enrollable.term.name %><br>
+            <% end %>
+            <strong>Students Enrolled:</strong> <%= @enrollment.enrollable.students.count %><br>
+            <strong>Instructors:</strong> <%= @enrollment.enrollable.instructors.count %>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,224 @@
+<% content_for :title, "My Profile" %>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-user"></i> My Profile</h1>
+    <p class="text-muted">Manage your account information and settings</p>
+  </div>
+  <div class="col-md-4 text-end">
+    <%= link_to "Edit Profile", edit_profile_path, class: "btn btn-warning" %>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-4">
+    <!-- Profile Info Card -->
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="bg-<%= @user.student? ? 'primary' : @user.instructor? ? 'success' : 'warning' %> text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" 
+             style="width: 80px; height: 80px; font-size: 24px;">
+          <%= @user.first_name&.first&.upcase %><%= @user.last_name&.first&.upcase %>
+        </div>
+        
+        <h4><%= @user.full_name %></h4>
+        <span class="badge bg-<%= @user.student? ? 'primary' : @user.instructor? ? 'success' : 'warning' %> mb-3">
+          <%= @user.user_type.humanize %>
+        </span>
+        
+        <dl class="text-start">
+          <dt>Email:</dt>
+          <dd><%= @user.email %></dd>
+          
+          <% if @user.phone.present? %>
+            <dt>Phone:</dt>
+            <dd><%= @user.phone %></dd>
+          <% end %>
+          
+          <dt>School:</dt>
+          <dd><%= current_school.name %></dd>
+          
+          <dt>Member Since:</dt>
+          <dd><%= @user.created_at.strftime("%B %Y") %></dd>
+        </dl>
+        
+        <% if @user.bio.present? %>
+          <hr>
+          <p class="text-muted small"><%= @user.bio %></p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-8">
+    <% if @user.student? %>
+      <!-- Student Dashboard -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h3><%= @enrolled_courses.count %></h3>
+              <p class="mb-0">Enrolled Courses</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h3><%= @enrolled_courses.joins(:chapters).count %></h3>
+              <p class="mb-0">Total Chapters</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h3><%= @enrolled_courses.joins(:course_contents).count %></h3>
+              <p class="mb-0">Learning Resources</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-book"></i> My Courses</h5>
+        </div>
+        <div class="card-body">
+          <% if @enrolled_courses.any? %>
+            <% @enrolled_courses.each do |course| %>
+              <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                <div>
+                  <h6 class="mb-1"><%= course.name %></h6>
+                  <small class="text-muted">
+                    <%= pluralize(course.chapters.count, 'chapter') %> • 
+                    <%= pluralize(course.instructors.count, 'instructor') %>
+                  </small>
+                </div>
+                <div>
+                  <%= link_to "Continue", [course.school, course], class: "btn btn-sm btn-primary" %>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted">You're not enrolled in any courses yet.</p>
+            <%= link_to "Browse Courses", courses_path, class: "btn btn-primary" %>
+          <% end %>
+        </div>
+      </div>
+      
+    <% elsif @user.instructor? %>
+      <!-- Instructor Dashboard -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h3><%= @assigned_courses.count %></h3>
+              <p class="mb-0">Teaching Courses</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h3><%= @total_students %></h3>
+              <p class="mb-0">Total Students</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h3><%= @assigned_courses.joins(:chapters).count %></h3>
+              <p class="mb-0">Course Chapters</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-chalkboard-teacher"></i> My Courses</h5>
+        </div>
+        <div class="card-body">
+          <% if @assigned_courses.any? %>
+            <% @assigned_courses.each do |course| %>
+              <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                <div>
+                  <h6 class="mb-1"><%= course.name %></h6>
+                  <small class="text-muted">
+                    <%= pluralize(course.students.count, 'student') %> • 
+                    <%= pluralize(course.chapters.count, 'chapter') %>
+                  </small>
+                </div>
+                <div>
+                  <%= link_to "Manage", [course.school, course], class: "btn btn-sm btn-success" %>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted">You haven't been assigned to any courses yet.</p>
+          <% end %>
+        </div>
+      </div>
+      
+    <% else %>
+      <!-- Management Dashboard -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+              <h3><%= @school_stats[:students] %></h3>
+              <p class="mb-0">Students</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-success text-white">
+            <div class="card-body text-center">
+              <h3><%= @school_stats[:instructors] %></h3>
+              <p class="mb-0">Instructors</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-info text-white">
+            <div class="card-body text-center">
+              <h3><%= @school_stats[:courses] %></h3>
+              <p class="mb-0">Courses</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-cog"></i> Management Tools</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <%= link_to current_school, class: "btn btn-outline-primary w-100" do %>
+                <i class="fas fa-school"></i> School Management
+              <% end %>
+            </div>
+            <div class="col-md-6 mb-2">
+              <%= link_to school_users_path(current_school), class: "btn btn-outline-success w-100" do %>
+                <i class="fas fa-users"></i> Manage Users
+              <% end %>
+            </div>
+            <div class="col-md-6 mb-2">
+              <%= link_to school_courses_path(current_school), class: "btn btn-outline-info w-100" do %>
+                <i class="fas fa-book"></i> Manage Courses
+              <% end %>
+            </div>
+            <div class="col-md-6 mb-2">
+              <%= link_to enrollments_path, class: "btn btn-outline-warning w-100" do %>
+                <i class="fas fa-graduation-cap"></i> View Enrollments
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div> 

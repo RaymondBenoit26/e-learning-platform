@@ -1,0 +1,180 @@
+<% content_for :title, @school.name %>
+
+<div class="row">
+  <div class="col-md-8">
+    <h1><i class="fas fa-school"></i> <%= @school.name %></h1>
+    <p class="lead text-muted">School Overview and Management</p>
+  </div>
+  <div class="col-md-4 text-end">
+    <%= link_to "Edit School", edit_school_path(@school), class: "btn btn-warning" %>
+  </div>
+</div>
+
+<!-- School Information Card -->
+<div class="row mb-4">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> School Information</h5>
+      </div>
+      <div class="card-body">
+        <dl class="row">
+          <dt class="col-sm-3">Name:</dt>
+          <dd class="col-sm-9"><%= @school.name %></dd>
+          
+          <% if @school.domain.present? %>
+            <dt class="col-sm-3">Domain:</dt>
+            <dd class="col-sm-9"><%= @school.domain %></dd>
+          <% end %>
+          
+          <% if @school.address.present? %>
+            <dt class="col-sm-3">Address:</dt>
+            <dd class="col-sm-9"><%= @school.address %></dd>
+          <% end %>
+          
+          <% if @school.phone.present? %>
+            <dt class="col-sm-3">Phone:</dt>
+            <dd class="col-sm-9"><%= @school.phone %></dd>
+          <% end %>
+          
+          <% if @school.email.present? %>
+            <dt class="col-sm-3">Email:</dt>
+            <dd class="col-sm-9">
+              <%= link_to @school.email, "mailto:#{@school.email}" %>
+            </dd>
+          <% end %>
+        </dl>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-4">
+    <!-- Quick Stats -->
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6 mb-3">
+            <h3 class="text-primary"><%= @total_students %></h3>
+            <small class="text-muted">Students</small>
+          </div>
+          <div class="col-6 mb-3">
+            <h3 class="text-success"><%= @total_instructors %></h3>
+            <small class="text-muted">Instructors</small>
+          </div>
+          <div class="col-6">
+            <h3 class="text-info"><%= @total_courses %></h3>
+            <small class="text-muted">Courses</small>
+          </div>
+          <div class="col-6">
+            <h3 class="text-warning"><%= @school.terms.count %></h3>
+            <small class="text-muted">Terms</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-cog"></i> Management Tools</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3 mb-2">
+            <%= link_to school_courses_path(@school), class: "btn btn-outline-primary w-100" do %>
+              <i class="fas fa-book"></i><br>
+              Manage Courses
+            <% end %>
+          </div>
+          <div class="col-md-3 mb-2">
+            <%= link_to school_users_path(@school), class: "btn btn-outline-success w-100" do %>
+              <i class="fas fa-users"></i><br>
+              Manage Users
+            <% end %>
+          </div>
+          <div class="col-md-3 mb-2">
+            <%= link_to school_terms_path(@school), class: "btn btn-outline-info w-100" do %>
+              <i class="fas fa-calendar"></i><br>
+              Manage Terms
+            <% end %>
+          </div>
+          <div class="col-md-3 mb-2">
+            <%= link_to enrollments_path, class: "btn btn-outline-warning w-100" do %>
+              <i class="fas fa-graduation-cap"></i><br>
+              View Enrollments
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-clock"></i> Recent Enrollments</h5>
+      </div>
+      <div class="card-body">
+        <% if @recent_enrollments.any? %>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Course</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @recent_enrollments.each do |enrollment| %>
+                  <% if enrollment.enrollable.is_a?(Course) %>
+                    <tr>
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                               style="width: 30px; height: 30px; font-size: 12px;">
+                            <%= enrollment.student.first_name&.first&.upcase %>
+                          </div>
+                          <%= enrollment.student.full_name %>
+                        </div>
+                      </td>
+                      <td><%= enrollment.enrollable.name %></td>
+                      <td>
+                        <%= enrollment.created_at.strftime("%B %d, %Y") %><br>
+                        <small class="text-muted"><%= time_ago_in_words(enrollment.created_at) %> ago</small>
+                      </td>
+                      <td>
+                        <%= link_to "View", [enrollment.enrollable.school, enrollment.enrollable], 
+                            class: "btn btn-sm btn-outline-primary" %>
+                      </td>
+                    </tr>
+                  <% end %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="text-center mt-3">
+            <%= link_to "View All Enrollments", enrollments_path, class: "btn btn-primary" %>
+          </div>
+        <% else %>
+          <div class="text-center py-3">
+            <i class="fas fa-users fa-2x text-muted mb-2"></i>
+            <p class="text-muted">No recent enrollments</p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div> 
