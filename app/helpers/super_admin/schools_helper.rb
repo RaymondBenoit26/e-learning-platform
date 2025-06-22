@@ -1,0 +1,2 @@
+module SuperAdmin::SchoolsHelper
+end
