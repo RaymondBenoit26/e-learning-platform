@@ -224,6 +224,18 @@ upcoming_premium = upcoming_term.licenses.create!(
 # Create Users
 puts "Creating users..."
 
+# Super Admin user
+super_admin = User.create!(
+  first_name: "Super",
+  last_name: "Admin",
+  email: "superadmin@elearning.com",
+  password: "password123",
+  password_confirmation: "password123",
+  user_type: "super_admin", # Super admin user type
+  phone: "(555) 000-0000",
+  bio: "System super administrator with full access to all schools and management features."
+)
+
 # Management user
 admin = school.users.create!(
   first_name: "Admin",
@@ -670,111 +682,94 @@ students[8..9].each do |student|
   spring_standard.license_accesses.create!(student: student, status: 'active')
 end
 
-# Create Term Enrollments
-puts "Creating term enrollments..."
+# Create license accesses for other terms (summer, winter, current)
+students[0..2].each do |student|
+  summer_intensive.license_accesses.create!(student: student, status: 'active')
+end
 
-# Enroll students in terms
-students[0..6].each_with_index do |student, index|
-  # Fall term enrollments
-  license = case index
-  when 0..2
-              fall_premium
-  when 3..5
-              fall_standard
-  else
-              fall_free
-  end
+students[3..5].each do |student|
+  winter_research.license_accesses.create!(student: student, status: 'active')
+end
 
-  term_enrollment = fall_term.enrollments.create!(
-    student: student,
-    enrollable: fall_term,
-    payable: license,
-    status: 'active',
-    enrollment_type: 'license_based'
-  )
+students[6..8].each do |student|
+  current_premium.license_accesses.create!(student: student, status: 'active')
+end
 
-  # Create payment for paid licenses
-  if license.price > 0
+# Note: Term enrollments are automatically created by LicenseAccess callbacks
+puts "Term enrollments will be created automatically via LicenseAccess..."
+
+# Create payments for license accesses (separate from automatic enrollment creation)
+puts "Creating payments for license purchases..."
+
+# Create payments for fall term license accesses
+students[0..2].each do |student|
+  if fall_premium.price > 0
     student.payments.create!(
-      amount: license.price,
+      amount: fall_premium.price,
       payment_method: 'credit_card',
       status: 'completed',
-      payable: term_enrollment
+      payable: fall_premium
     )
   end
 end
 
-# Spring term enrollments
-students[7..9].each do |student|
-  term_enrollment = spring_term.enrollments.create!(
-    student: student,
-    enrollable: spring_term,
-    payable: spring_standard,
-    status: 'active',
-    enrollment_type: 'license_based'
-  )
-
-  student.payments.create!(
-    amount: spring_standard.price,
-    payment_method: 'credit_card',
-    status: 'completed',
-    payable: term_enrollment
-  )
-end
-
-# Add enrollments for other terms
-# Summer term enrollments
-students[0..2].each do |student|
-  term_enrollment = summer_term.enrollments.create!(
-    student: student,
-    enrollable: summer_term,
-    payable: summer_intensive,
-    status: 'active',
-    enrollment_type: 'license_based'
-  )
-
-  student.payments.create!(
-    amount: summer_intensive.price,
-    payment_method: 'credit_card',
-    status: 'completed',
-    payable: term_enrollment
-  )
-end
-
-# Winter term enrollments
 students[3..5].each do |student|
-  term_enrollment = winter_term.enrollments.create!(
-    student: student,
-    enrollable: winter_term,
-    payable: winter_research,
-    status: 'active',
-    enrollment_type: 'license_based'
-  )
-
-  student.payments.create!(
-    amount: winter_research.price,
-    payment_method: 'credit_card',
-    status: 'completed',
-    payable: term_enrollment
-  )
+  if fall_standard.price > 0
+    student.payments.create!(
+      amount: fall_standard.price,
+      payment_method: 'credit_card',
+      status: 'completed',
+      payable: fall_standard
+    )
+  end
 end
 
-# Current term enrollments
-students[6..8].each do |student|
-  term_enrollment = current_term.enrollments.create!(
-    student: student,
-    enrollable: current_term,
-    payable: current_premium,
-    status: 'active',
-    enrollment_type: 'license_based'
-  )
+# Create payments for spring term license accesses
+students[8..9].each do |student|
+  if spring_standard.price > 0
+    student.payments.create!(
+      amount: spring_standard.price,
+      payment_method: 'credit_card',
+      status: 'completed',
+      payable: spring_standard
+    )
+  end
+end
 
-  student.payments.create!(
-    amount: current_premium.price,
-    payment_method: 'credit_card',
-    status: 'completed',
-    payable: term_enrollment
-  )
+# Create payments for summer term license accesses
+students[0..2].each do |student|
+  if summer_intensive.price > 0
+    student.payments.create!(
+      amount: summer_intensive.price,
+      payment_method: 'credit_card',
+      status: 'completed',
+      payable: summer_intensive
+    )
+  end
+end
+
+# Create payments for winter term license accesses
+students[3..5].each do |student|
+  if winter_research.price > 0
+    student.payments.create!(
+      amount: winter_research.price,
+      payment_method: 'credit_card',
+      status: 'completed',
+      payable: winter_research
+    )
+  end
+end
+
+# Create payments for current term license accesses
+students[6..8].each do |student|
+  if current_premium.price > 0
+    student.payments.create!(
+      amount: current_premium.price,
+      payment_method: 'credit_card',
+      status: 'completed',
+      payable: current_premium
+    )
+  end
 end
 
 # Note: Upcoming term has no enrollments yet - perfect for testing new enrollments!
@@ -792,13 +787,14 @@ students.each_with_index do |student, index|
   courses_to_enroll = all_courses.sample(rand(1..3))
 
   courses_to_enroll.each do |course|
-    # Create course enrollment (not term-based)
-    course.enrollments.create!(
+    # Create course enrollment (not term-based) - use find_or_create_by to avoid duplicates
+    course.enrollments.find_or_create_by(
       student: student,
       enrollable: course,
-      status: "active",
       enrollment_type: "course"
-    )
+    ) do |enrollment|
+      enrollment.status = "active"
+    end
   end
 end
 
@@ -837,6 +833,7 @@ puts "Creating term licenses..."
 puts "Seed completed successfully!"
 puts ""
 puts "=== Login Credentials ==="
+puts "Super Admin: superadmin@elearning.com / password123"
 puts "Admin: admin@demo.edu / password123"
 puts "Instructor: john.smith@demo.edu / password123"
 puts "Instructor: sarah.johnson@demo.edu / password123"
@@ -848,7 +845,7 @@ puts "... (students 1-10 all use password123)"
 puts ""
 puts "=== Summary ==="
 puts "Schools: #{School.count}"
-puts "Users: #{User.count} (#{User.students.count} students, #{User.instructors.count} instructors, #{User.management.count} management)"
+puts "Users: #{User.count} (#{User.students.count} students, #{User.instructors.count} instructors, #{User.management.count} management, #{User.super_admins.count} super admin)"
 puts "Terms: #{Term.count} (Fall 2024, Spring 2025, Summer 2025, Winter 2025, Current Term 2025, Upcoming Term 2025)"
 puts "Courses: #{Course.count} (11 courses across 6 terms)"
 puts "Chapters: #{Chapter.count}"

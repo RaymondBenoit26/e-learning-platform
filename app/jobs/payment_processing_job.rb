@@ -3,41 +3,24 @@ class PaymentProcessingJob < ApplicationJob
 
   def perform(payment_id)
     payment = Payment.find_by(id: payment_id)
-    return unless payment && payment.pending?
+    return unless payment&.pending?
 
-    # Simulate payment processing with realistic delays
     process_payment(payment)
+  rescue ActiveRecord::RecordNotFound => e
+    Rails.logger.error "Payment not found in PaymentProcessingJob: #{e.message}"
+  rescue StandardError => e
+    Rails.logger.error "Error processing payment #{payment_id}: #{e.message}"
+    payment&.update(status: :failed)
   end
 
   private
 
   def process_payment(payment)
-    # Simulate payment processing time (1-3 minutes)
-    processing_time = rand(60..180)
-    sleep(processing_time)
+    # Simulate payment processing
+    sleep(30.seconds) if Rails.env.development?
 
-    # Simulate payment success/failure (95% success rate)
-    if rand < 0.95
-      payment.update(status: :completed)
-      process_payable(payment.payable)
-    else
-      payment.update(status: :failed)
-    end
-  end
-
-  def process_payable(payable)
-    case payable
-    when Enrollment
-      process_enrollment(payable)
-    end
-  end
-
-  def process_enrollment(enrollment)
-    return unless enrollment.pending?
-
-    if enrollment.course_enrollment? || enrollment.term_enrollment?
-      # For course enrollments, activate if payment is completed
-      enrollment.update(status: :active)
+    ActiveRecord::Base.transaction do
+      payment.update!(status: :completed)
     end
   end
 end

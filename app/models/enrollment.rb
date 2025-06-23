@@ -1,7 +1,7 @@
 class Enrollment < ApplicationRecord
   belongs_to :student, class_name: "User"
   belongs_to :enrollable, polymorphic: true  # Can be Course or Term
-  belongs_to :payable, polymorphic: true, optional: true
+  belongs_to :license_access, optional: true # Only for license-based enrollments
   has_many :payments, as: :payable, dependent: :destroy
 
   # Enrollment status enum
@@ -27,6 +27,10 @@ class Enrollment < ApplicationRecord
     scope: [ :enrollable_type, :enrollable_id, :enrollment_type ],
     message: "Student is already enrolled in this item"
   }
+
+  # Validate that license-based enrollments have license_access
+  validates :license_access_id, presence: true, if: :license_based?
+  validates :license_access_id, absence: true, unless: :license_based?
 
   # Scopes for different enrollment types
   scope :course_enrollments, -> { where(enrollable_type: "Course") }
@@ -54,7 +58,7 @@ class Enrollment < ApplicationRecord
   end
 
   def self.ransackable_associations(auth_object = nil)
-    [ "enrollable", "student", "payable" ]
+    [ "enrollable", "student", "license_access" ]
   end
 
   # Helper methods for easier access to enrollable types
@@ -88,27 +92,24 @@ class Enrollment < ApplicationRecord
     enrollable.start_date <= Date.current && enrollable.end_date >= Date.current
   end
 
-  # Check if enrollment is affected by license expiration (for term enrollments)
+  # Check if enrollment is affected by license expiration (for license-based enrollments)
   def license_expired?
-    return false unless term_enrollment? && license_based?
-    payable&.expired?
+    return false unless license_based?
+    license_access&.license&.expired?
   end
 
   # Check if user has valid access
   def has_valid_access?
     return false unless active?
 
-    if term_enrollment?
-      case enrollment_type
-      when "license_based"
-        payable.nil? || !payable.expired?
-      when "direct_payment", "free"
-        !expired?
-      else
-        false
-      end
+    case enrollment_type
+    when "license_based"
+      license_access&.active? && !license_expired?
+    when "direct_payment"
+      payment_completed? && (course_enrollment? || !expired?)
+    when "free"
+      course_enrollment? || !expired?
     else
-      # Course enrollments are always valid if active
       true
     end
   end
@@ -123,18 +124,22 @@ class Enrollment < ApplicationRecord
       "Enrollment cancelled"
     elsif completed?
       "Enrollment completed"
-    elsif term_enrollment? && license_based? && license_expired?
-      "License expired on #{payable.expires_at.strftime('%B %d, %Y')}"
+    elsif license_based? && license_expired?
+      "License expired on #{license_access.license.expires_at&.strftime('%B %d, %Y')}"
+    elsif license_based? && !license_access&.active?
+      "License access is not active"
     elsif term_enrollment? && expired?
       "Term ended on #{enrollable.end_date.strftime('%B %d, %Y')}"
+    elsif direct_payment? && !payment_completed?
+      "Payment not completed"
     else
       "Access restricted"
     end
   end
 
-  # Check if user can renew their license (for term enrollments)
+  # Check if user can renew their license (for license-based enrollments)
   def can_renew_license?
-    term_enrollment? && license_based? && license_expired? && enrollable.end_date >= Date.current
+    license_based? && license_expired? && term_enrollment? && enrollable.end_date >= Date.current
   end
 
   # Check if this is a license-based enrollment
@@ -157,6 +162,7 @@ class Enrollment < ApplicationRecord
     free? || (enrollable.respond_to?(:price) && enrollable.price&.zero?)
   end
 
+  # Get the total amount paid for this enrollment
   def total_paid
     payments.completed.sum(:amount)
   end
@@ -165,7 +171,7 @@ class Enrollment < ApplicationRecord
   def payment_required?
     case enrollment_type
     when "license_based"
-      payable&.price&.positive?
+      license_access&.license&.price&.positive?
     when "direct_payment"
       true
     when "free"
@@ -179,7 +185,7 @@ class Enrollment < ApplicationRecord
   def enrollment_cost
     case enrollment_type
     when "license_based"
-      payable&.price || 0
+      license_access&.license&.price || 0
     when "direct_payment"
       total_paid
     when "free"
@@ -189,10 +195,17 @@ class Enrollment < ApplicationRecord
     end
   end
 
+  # Get the license for license-based enrollments
+  def license
+    license_access&.license
+  end
+
+  # Returns the course name if enrollable is a Course, otherwise nil
   def course_name
     enrollable.is_a?(Course) ? enrollable.name : nil
   end
 
+  # Get the latest payment for this enrollment
   def latest_payment
     payments.order(created_at: :desc).first
   end

@@ -2,73 +2,17 @@ class EnrollmentsController < ApplicationController
   before_action :set_enrollment, only: [ :show, :destroy ]
   before_action :set_enrollable, only: [ :new, :create ]
 
-    def index
-    # Handle enrollment type filtering
+  def index
     @enrollment_type = params[:type]&.downcase
 
-    case current_user.user_type
-    when "student"
-      base_query = current_user.enrollments.includes(:student)
+    base_query = build_base_query_for_user
+    base_query = apply_enrollment_type_filter(base_query) if @enrollment_type.present?
+    base_query = apply_search_term_filter(base_query) if params[:search_term].present?
 
-      # Filter by enrollment type if specified
-      case @enrollment_type
-      when "term"
-        base_query = base_query.term_enrollments
-      when "course"
-        base_query = base_query.course_enrollments
-      end
-
-      # Apply custom search term filtering for polymorphic associations
-      if params[:search_term].present?
-        search_term = "%#{params[:search_term]}%"
-        base_query = base_query.joins(
-          "LEFT JOIN courses ON courses.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Course'
-           LEFT JOIN terms ON terms.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Term'"
-        ).where(
-          "(enrollments.enrollable_type = 'Course' AND courses.name ILIKE ?) OR
-           (enrollments.enrollable_type = 'Term' AND terms.name ILIKE ?)",
-          search_term, search_term
-        )
-      end
-
-      @q = base_query.ransack(params[:q])
-    when "instructor"
-      course_ids = current_user.assigned_courses.pluck(:id)
-      base_query = Enrollment.course_enrollments
-                    .where(enrollable_id: course_ids)
-                    .includes(:student)
-
-      # Apply custom search term filtering for courses only (instructor context)
-      if params[:search_term].present?
-        search_term = "%#{params[:search_term]}%"
-        base_query = base_query.joins("INNER JOIN courses ON courses.id = enrollments.enrollable_id")
-                              .where("courses.name ILIKE ?", search_term)
-      end
-
-      @q = base_query.ransack(params[:q])
-    when "management"
-      base_query = Enrollment.course_enrollments
-                    .joins("INNER JOIN courses ON courses.id = enrollments.enrollable_id")
-                    .where(courses: { school_id: current_school.id })
-                    .includes(:student)
-
-      # Apply custom search term filtering for courses only (management context)
-      if params[:search_term].present?
-        search_term = "%#{params[:search_term]}%"
-        base_query = base_query.where("courses.name ILIKE ?", search_term)
-      end
-
-      @q = base_query.ransack(params[:q])
-    end
-
+    @q = base_query.ransack(params[:q])
     @enrollments = @q.result(distinct: true).order("enrollments.created_at DESC").limit(50)
 
-    # Get enrollment counts for students
-    if current_user.student?
-      @term_enrollment_count = current_user.enrollments.term_enrollments.count
-      @course_enrollment_count = current_user.enrollments.course_enrollments.count
-      @total_enrollment_count = current_user.enrollments.count
-    end
+    set_enrollment_counts if current_user.student?
   end
 
   def new
@@ -82,37 +26,21 @@ class EnrollmentsController < ApplicationController
     @enrollment.student = current_user
     @enrollment.enrollable = @enrollable
 
-    # Validate license selection for license-based enrollments
     if @enrollment.license_based? && params[:enrollment][:license_id].blank?
       @enrollment.errors.add(:license_id, "must be selected for license-based enrollment")
       render :new, status: :unprocessable_entity
       return
     end
 
-    # Validate payment method for direct payment enrollments
     if @enrollment.direct_payment? && params[:enrollment][:payment_method].blank?
       @enrollment.errors.add(:payment_method, "must be selected for direct payment enrollment")
       render :new, status: :unprocessable_entity
       return
     end
 
-    # Set initial status based on enrollment type
-    if @enrollment.free?
-      @enrollment.status = :active
-    else
-      @enrollment.status = :pending
-    end
-
+    @enrollment.status = @enrollment.free? ? :active : :pending
     if @enrollment.save
-      if !@enrollment.free?
-        begin
-          create_payment_for_enrollment(@enrollment)
-        rescue => e
-          @enrollment.errors.add(:base, "Payment creation failed: #{e.message}")
-          render :new, status: :unprocessable_entity
-          return
-        end
-      end
+      create_payment_for_enrollment(@enrollment) unless @enrollment.free?
 
       redirect_to @enrollment, notice: "Successfully enrolled!"
     else
@@ -121,7 +49,6 @@ class EnrollmentsController < ApplicationController
   end
 
   def show
-    # Show enrollment details including payment information
   end
 
   def destroy
@@ -159,8 +86,6 @@ class EnrollmentsController < ApplicationController
   end
 
   def enrollment_params
-    # Remove license_id and payment_method from enrollment attributes since they're not model attributes
-    # These will be handled separately in payment creation methods
     params.require(:enrollment).permit(:enrollment_type, :status)
   end
 
@@ -188,7 +113,6 @@ class EnrollmentsController < ApplicationController
   end
 
   def create_license_payment(enrollment)
-    # Get license_id from the enrollment parameters (not license_params)
     license_id = params[:enrollment][:license_id]
 
     if license_id.blank?
@@ -203,41 +127,49 @@ class EnrollmentsController < ApplicationController
     end
 
     # Check if user already has access to this license
-    if license.license_accesses.exists?(student: current_user)
-      raise "You already have access to license '#{license.name}'"
+    existing_access = license.license_accesses.find_by(student: current_user)
+    if existing_access
+      # If license access already exists and is active, link it to enrollment
+      if existing_access.active?
+        enrollment.update!(license_access: existing_access, status: :active)
+        return
+      else
+        raise "You already have access to license '#{license.name}' but it's not active"
+      end
     end
 
-    # Create license access
+    # Create license access - this will automatically create the enrollment via callback
+    # So we need to delete the manually created enrollment first
+    enrollment.destroy
+
+    # Create license access which will automatically create a proper enrollment
     license_access = license.license_accesses.build(student: current_user, status: :active)
     unless license_access.save
       raise "Failed to create license access: #{license_access.errors.full_messages.join(', ')}"
     end
 
-    # Set the license as the payable for the enrollment
-    enrollment.update(payable: license)
+    # Create payment record for the license (payment.payable = license, not enrollment)
+    if license.price > 0
+      payment = Payment.create!(
+        student: current_user,
+        payable: license,  # Payment is for the license, not enrollment
+        amount: license.price,
+        payment_method: :credit_card,
+        status: :completed
+      )
 
-    # Create payment record for the license
-    payment = Payment.create!(
-      student: current_user,
-      payable: enrollment,
-      amount: license.price,
-      payment_method: :scholarship, # License payments are typically pre-paid
-      status: :completed
-    )
-
-    # Activate the enrollment immediately for license-based enrollments
-    enrollment.update(status: :active)
+      # Create license purchase breakdown
+      payment.create_license_breakdown(license)
+    end
   end
 
   def create_direct_payment(enrollment)
-    # Calculate payment amount
     amount = if enrollment.term_enrollment?
       enrollment.enrollable.adjusted_total_course_price_for(current_user)
     else
       enrollment.enrollable.price
     end
 
-    # Create pending payment
     payment = Payment.create!(
       student: current_user,
       payable: enrollment,
@@ -253,6 +185,44 @@ class EnrollmentsController < ApplicationController
       payment.create_course_breakdown(enrollment.enrollable)
     end
 
-    # The payment processing job will handle the enrollment activation
+    PaymentProcessingJob.set(wait: 1.minute).perform_later(payment.id)
+  end
+
+  def build_base_query_for_user
+    case current_user.user_type
+    when "student"
+      base_query = current_user.enrollments.includes(:student)
+    when "instructor"
+      course_ids = current_user.assigned_courses.pluck(:id)
+      base_query = Enrollment.course_enrollments
+                    .where(enrollable_id: course_ids)
+                    .includes(:student)
+    when "management"
+      base_query = Enrollment.course_enrollments
+                    .joins("INNER JOIN courses ON courses.id = enrollments.enrollable_id")
+                    .where(courses: { school_id: current_school.id })
+                    .includes(:student)
+    end
+    base_query
+  end
+
+  def apply_enrollment_type_filter(base_query)
+    base_query.send("#{@enrollment_type}_enrollments")
+  end
+
+  def apply_search_term_filter(base_query)
+    search_term = "%#{params[:search_term]}%"
+    base_query.joins(
+      "LEFT JOIN courses ON courses.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Course'
+       LEFT JOIN terms ON terms.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Term'"
+    ).where("(enrollments.enrollable_type = 'Course' AND courses.name ILIKE ?) OR (enrollments.enrollable_type = 'Term' AND terms.name ILIKE ?)", search_term, search_term)
+  end
+
+  def set_enrollment_counts
+    if current_user.student?
+      @term_enrollment_count = current_user.enrollments.term_enrollments.count
+      @course_enrollment_count = current_user.enrollments.course_enrollments.count
+      @total_enrollment_count = current_user.enrollments.count
+    end
   end
 end

@@ -98,14 +98,14 @@
             <% end %>
           </dd>
           
-          <% if @enrollment.license_based? && @enrollment.payable.is_a?(License) %>
+          <% if @enrollment.license_based? && @enrollment.license_access&.license %>
             <dt class="col-sm-3">License:</dt>
             <dd class="col-sm-9">
-              <strong><%= @enrollment.payable.name %></strong><br>
+              <strong><%= @enrollment.license_access.license.name %></strong><br>
               <small class="text-muted">
-                Type: <%= @enrollment.payable.license_type&.humanize %><br>
-                <% if @enrollment.payable.expires_at %>
-                  Expires: <%= @enrollment.payable.expires_at.strftime("%B %d, %Y") %>
+                Type: <%= @enrollment.license_access.license.license_type&.humanize %><br>
+                <% if @enrollment.license_access.license.expires_at %>
+                  Expires: <%= @enrollment.license_access.license.expires_at.strftime("%B %d, %Y") %>
                 <% else %>
                   Lifetime license
                 <% end %>

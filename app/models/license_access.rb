@@ -4,6 +4,7 @@
 class LicenseAccess < ApplicationRecord
   belongs_to :license
   belongs_to :student, class_name: "User"
+  has_one :enrollment, dependent: :destroy # Clean 1:1 relationship
 
   # Status enum for license access
   enum :status, {
@@ -17,13 +18,14 @@ class LicenseAccess < ApplicationRecord
   # This prevents duplicate purchases and maintains data integrity
   validates :license_id, uniqueness: { scope: :student_id, message: "has already been purchased by this student" }
 
-  # Automatically create enrollment when license access becomes active
-  after_update :create_enrollment_if_active, if: :saved_change_to_status?
+  # Callbacks for license access lifecycle
+  # When license access becomes active, automatically create enrollment
+  after_update :create_enrollment_if_activated, if: :saved_change_to_status_to_active?
   after_create :create_enrollment_if_active, if: :active?
 
-  # Get the payment for this license access
+  # Get the payment for this license access (payment.payable points to the license)
   def payment
-    student.payments.find_by(payable: license)
+    student.payments.find_by(payable_type: "License", payable_id: license_id)
   end
 
   # Check if this license access has a payment
@@ -39,35 +41,13 @@ class LicenseAccess < ApplicationRecord
   # Get payment method display name
   def payment_method_display
     return "Free" unless has_payment?
-
-    case payment.payment_method
-    when "credit_card"
-      "Credit Card"
-    when "debit_card"
-      "Debit Card"
-    when "bank_transfer"
-      "Bank Transfer"
-    when "paypal"
-      "PayPal"
-    when "stripe"
-      "Stripe"
-    when "cash"
-      "Cash"
-    when "scholarship"
-      "Scholarship"
-    when "waived"
-      "Waived"
-    else
-      payment.payment_method&.humanize || "Unknown"
-    end
+    payment.payment_method.humanize
   end
 
-  # Get amount paid from associated payment
   def amount_paid
     payment&.amount || 0
   end
 
-  # Check if this is a paid license access
   def paid?
     has_payment? && amount_paid > 0 && !%w[scholarship waived].include?(payment_method)
   end
@@ -79,29 +59,29 @@ class LicenseAccess < ApplicationRecord
 
   private
 
+  def saved_change_to_status_to_active?
+    saved_change_to_status? && active?
+  end
+
+  def create_enrollment_if_activated
+    create_enrollment_if_active
+  end
+
   def create_enrollment_if_active
     return unless active?
-    return if enrollment_exists?
+    return if enrollment.present? && enrollment.status.active?
 
-    # Create enrollment based on license type
-    enrollment = student.enrollments.build(
+    new_enrollment = student.enrollments.build(
       enrollable: license.licensable,
       enrollment_type: :license_based,
       status: :active,
-      payable: payment # Link to the payment if it exists
+      license_access: self
     )
 
-    if enrollment.save
-      Rails.logger.info "Enrollment created for student #{student.email} in #{license.licensable_type} #{license.licensable.name} via license #{license.name}"
+    if new_enrollment.save
+      Rails.logger.info "Created enrollment #{new_enrollment.id} for license access #{id}"
     else
-      Rails.logger.error "Failed to create enrollment for license access #{id}: #{enrollment.errors.full_messages.join(', ')}"
+      Rails.logger.error "Failed to create enrollment for license access #{id}: #{new_enrollment.errors.full_messages.join(', ')}"
     end
-  end
-
-  def enrollment_exists?
-    student.enrollments.exists?(
-      enrollable: license.licensable,
-      enrollment_type: :license_based
-    )
   end
 end
