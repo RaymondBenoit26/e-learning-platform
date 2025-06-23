@@ -1,0 +1,12 @@
+<div class="row mb-4">
+  <% license_statistics_cards(@licenses).each do |stat| %>
+    <div class="col-md-3">
+      <div class="card <%= stat[:bg_class] %> text-white">
+        <div class="card-body text-center">
+          <h3><%= stat[:count] %></h3>
+          <p class="mb-0"><%= stat[:label] %></p>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div> 

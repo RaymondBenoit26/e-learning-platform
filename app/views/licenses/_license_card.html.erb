@@ -1,0 +1,99 @@
+<div class="col-md-6 col-lg-4 mb-4">
+  <div class="card h-100 <%= license_card_border_class(license) %>">
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><%= license.name %></h6>
+        <span class="badge bg-<%= license_type_badge_class(license.license_type) %>">
+          <%= license.license_type.humanize %>
+        </span>
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <p class="card-text text-muted small">
+        <%= truncate(license.description, length: 100) %>
+      </p>
+      
+      <div class="row text-center mb-3">
+        <div class="col-4">
+          <strong class="text-success">$<%= format_license_price(license.price) %></strong><br>
+          <small class="text-muted">Price</small>
+        </div>
+        <div class="col-4">
+          <strong class="<%= available_seats_class(license) %>">
+            <%= license.available_seats %>
+          </strong><br>
+          <small class="text-muted">Available</small>
+        </div>
+        <div class="col-4">
+          <strong><%= license.students.count %></strong>/<%= license.max_seats %><br>
+          <small class="text-muted">Enrolled</small>
+        </div>
+      </div>
+      
+      <div class="mb-2">
+        <small class="text-muted">Term:</small><br>
+        <span class="badge bg-light text-dark"><%= license.term.name %></span>
+      </div>
+      
+      <% if current_user.super_admin? %>
+        <div class="mb-2">
+          <small class="text-muted">School:</small><br>
+          <span class="badge bg-info"><%= license.term.school.name %></span>
+        </div>
+      <% end %>
+      
+      <div class="mb-2">
+        <small class="text-muted">Expires:</small><br>
+        <span class="<%= license_expiry_class(license) %>">
+          <%= license.valid_until_display %>
+        </span>
+      </div>
+       
+      <% if current_user.management? %>
+        <div class="mb-2">
+          <small class="text-muted">Utilization:</small><br>
+          <% utilization = utilization_percentage(license) %>
+          <div class="progress" style="height: 16px;">
+            <div class="progress-bar bg-<%= utilization_progress_class(utilization) %>" 
+                 role="progressbar" 
+                 style="width: <%= utilization %>%"
+                 aria-valuenow="<%= utilization %>" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+              <small><%= utilization %>%</small>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mb-2">
+          <small class="text-muted">Revenue:</small><br>
+          <span class="text-success">
+            <strong>$<%= format_license_price(license_revenue(license)) %></strong>
+          </span>
+        </div>
+      <% end %>
+    </div>
+    
+    <div class="card-footer">
+      <div class="d-flex justify-content-between align-items-center">
+        <%= link_to "View Details", 
+            license_path(license), 
+            class: "btn btn-outline-primary btn-sm" %>
+            
+        <% if current_user.student? && license.seats_available? && !license.expired? %>
+          <%= link_to "Purchase", 
+              purchase_school_term_license_path(license.term.school, license.term, license), 
+              method: :post,
+              class: "btn btn-success btn-sm",
+              data: { confirm: "Purchase #{license.name} for $#{license.price}?" } %>
+        <% elsif current_user.management? %>
+          <div class="btn-group btn-group-sm">
+            <%= link_to "Edit", edit_school_term_license_path(license.term.school, license.term, license), 
+                class: "btn btn-warning btn-sm" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div> 

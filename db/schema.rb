@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_22_123913) do
+ActiveRecord::Schema[8.0].define(version: 2025_06_23_083449) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -88,17 +88,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_22_123913) do
 
   create_table "enrollments", force: :cascade do |t|
     t.bigint "student_id", null: false
-    t.string "payable_type"
-    t.bigint "payable_id"
     t.string "status", default: "pending"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "enrollment_type", default: "course"
     t.string "enrollable_type"
     t.bigint "enrollable_id"
+    t.bigint "license_access_id"
     t.index ["enrollable_type", "enrollable_id"], name: "index_enrollments_on_enrollable_type_and_enrollable_id"
     t.index ["enrollment_type"], name: "index_enrollments_on_enrollment_type"
-    t.index ["payable_type", "payable_id"], name: "index_enrollments_on_payable"
+    t.index ["license_access_id"], name: "index_enrollments_on_license_access_id"
     t.index ["student_id"], name: "index_enrollments_on_student_id"
   end
 
@@ -320,6 +319,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_22_123913) do
   add_foreign_key "course_contents", "courses"
   add_foreign_key "courses", "schools"
   add_foreign_key "courses", "terms"
+  add_foreign_key "enrollments", "license_accesses"
   add_foreign_key "enrollments", "users", column: "student_id"
   add_foreign_key "license_accesses", "licenses"
   add_foreign_key "license_accesses", "users", column: "student_id"

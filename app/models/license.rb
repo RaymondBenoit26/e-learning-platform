@@ -32,13 +32,38 @@ class License < ApplicationRecord
   scope :available, -> { active.where("max_seats > (SELECT COUNT(*) FROM license_accesses WHERE license_id = licenses.id)") }
   scope :for_terms, -> { where(licensable_type: "Term") }
   scope :for_courses, -> { where(licensable_type: "Course") }
+    scope :by_school, ->(school) {
+    joins("INNER JOIN terms ON terms.id = licenses.licensable_id")
+      .where(licensable_type: "Term", terms: { school_id: school.id })
+  }
+
+  # Class methods for common queries
+  def self.with_revenue_for_school(school)
+    by_school(school)
+      .joins(:payments)
+      .group("licenses.id")
+      .select("licenses.*, SUM(payments.amount) as total_revenue")
+  end
+
+  def self.most_popular_for_school(school)
+    by_school(school)
+      .left_joins(:license_accesses)
+      .group("licenses.id")
+      .order("COUNT(license_accesses.id) DESC")
+      .first
+  end
 
   def self.ransackable_attributes(auth_object = nil)
     [ "id", "name", "description", "price", "max_seats", "expires_at", "license_type", "licensable_type", "licensable_id", "created_at", "updated_at" ]
   end
 
   def self.ransackable_associations(auth_object = nil)
-    [ "licensable", "license_accesses", "students" ]
+    [ "licensable", "license_accesses", "students", "payments" ]
+  end
+
+  # Custom Ransack scopes for complex queries
+  ransacker :available_seats, formatter: proc { |v| v }, type: :numeric do |parent|
+    Arel.sql("(#{parent.table[:max_seats]} - (SELECT COUNT(*) FROM license_accesses WHERE license_id = licenses.id))")
   end
 
   def expired?
