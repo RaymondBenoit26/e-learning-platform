@@ -8,14 +8,13 @@ class License < ApplicationRecord
   has_many :license_accesses, dependent: :destroy
   has_many :students, through: :license_accesses, class_name: "User"
 
-  # Payment records for this license
   has_many :payments, as: :payable, dependent: :destroy
 
   # License type enum - defines different tiers of access
   enum :license_type, {
-    standard: "standard",    # Basic access with standard expiration
-    premium: "premium",      # Enhanced features with longer access
-    enterprise: "enterprise", # Advanced features for organizations
+    standard: "standard",
+    premium: "premium",
+    enterprise: "enterprise",
     lifetime: "lifetime"     # No expiration - permanent access
   }
 
@@ -34,7 +33,6 @@ class License < ApplicationRecord
   scope :for_terms, -> { where(licensable_type: "Term") }
   scope :for_courses, -> { where(licensable_type: "Course") }
 
-  # Ransack configuration for admin search functionality
   def self.ransackable_attributes(auth_object = nil)
     [ "id", "name", "description", "price", "max_seats", "expires_at", "license_type", "licensable_type", "licensable_id", "created_at", "updated_at" ]
   end
@@ -43,22 +41,18 @@ class License < ApplicationRecord
     [ "licensable", "license_accesses", "students" ]
   end
 
-  # Check if license has expired based on current time
   def expired?
     expires_at.present? && expires_at <= Time.current
   end
 
-  # Check if license is lifetime (no expiration)
   def lifetime?
     license_type == "lifetime" || expires_at.nil?
   end
 
-  # Calculate available seats (total seats minus current usage)
   def available_seats
     max_seats - license_accesses.count
   end
 
-  # Check if license has available seats for new purchases
   def seats_available?
     available_seats > 0
   end
@@ -79,16 +73,6 @@ class License < ApplicationRecord
     else
       "#{name} - Free"
     end
-  end
-
-  # Get price for JavaScript data attributes
-  def price_for_js
-    price&.positive? ? price.to_f : 0
-  end
-
-  # Get available seats for JavaScript data attributes
-  def available_seats_for_js
-    available_seats
   end
 
   # Get the licensable object (term or course)

@@ -18,20 +18,10 @@ class PaymentProcessingJob < ApplicationJob
 
     # Simulate payment success/failure (95% success rate)
     if rand < 0.95
-      # Payment successful
       payment.update(status: :completed)
-
-      # Process the associated enrollment
       process_payable(payment.payable)
-
-      # Log successful payment
-      Rails.logger.info "Payment #{payment.id} processed successfully for #{payment.student.email}"
     else
-      # Payment failed
       payment.update(status: :failed)
-
-      # Log failed payment
-      Rails.logger.warn "Payment #{payment.id} failed for #{payment.student.email}"
     end
   end
 
@@ -45,14 +35,9 @@ class PaymentProcessingJob < ApplicationJob
   def process_enrollment(enrollment)
     return unless enrollment.pending?
 
-    if enrollment.course_enrollment?
+    if enrollment.course_enrollment? || enrollment.term_enrollment?
       # For course enrollments, activate if payment is completed
       enrollment.update(status: :active)
-      Rails.logger.info "Course enrollment activated for #{enrollment.student.email} in #{enrollment.enrollable.name}"
-    elsif enrollment.term_enrollment?
-      # For term enrollments, activate if payment is completed
-      enrollment.update(status: :active)
-      Rails.logger.info "Term enrollment activated for #{enrollment.student.email} in #{enrollment.enrollable.name}"
     end
   end
 end

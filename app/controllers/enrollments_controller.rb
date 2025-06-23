@@ -78,20 +78,12 @@ class EnrollmentsController < ApplicationController
   end
 
   def create
-    Rails.logger.info "Enrollment create action called with params: #{params[:enrollment]}"
-    Rails.logger.info "License params: #{license_params}"
-    Rails.logger.info "Payment params: #{payment_params}"
-    Rails.logger.info "Enrollment params: #{enrollment_params}"
-
     @enrollment = Enrollment.new(enrollment_params)
     @enrollment.student = current_user
     @enrollment.enrollable = @enrollable
 
-    Rails.logger.info "Enrollment object created: #{@enrollment.attributes}"
-
     # Validate license selection for license-based enrollments
     if @enrollment.license_based? && params[:enrollment][:license_id].blank?
-      Rails.logger.warn "License ID missing for license-based enrollment"
       @enrollment.errors.add(:license_id, "must be selected for license-based enrollment")
       render :new, status: :unprocessable_entity
       return
@@ -99,7 +91,6 @@ class EnrollmentsController < ApplicationController
 
     # Validate payment method for direct payment enrollments
     if @enrollment.direct_payment? && params[:enrollment][:payment_method].blank?
-      Rails.logger.warn "Payment method missing for direct payment enrollment"
       @enrollment.errors.add(:payment_method, "must be selected for direct payment enrollment")
       render :new, status: :unprocessable_entity
       return
@@ -112,18 +103,11 @@ class EnrollmentsController < ApplicationController
       @enrollment.status = :pending
     end
 
-    Rails.logger.info "Attempting to save enrollment with status: #{@enrollment.status}"
-
     if @enrollment.save
-      Rails.logger.info "Enrollment saved successfully with ID: #{@enrollment.id}"
-
-      # Handle payment creation for non-free enrollments
       if !@enrollment.free?
         begin
           create_payment_for_enrollment(@enrollment)
-          Rails.logger.info "Payment created successfully for enrollment #{@enrollment.id}"
         rescue => e
-          Rails.logger.error "Payment creation failed: #{e.message}"
           @enrollment.errors.add(:base, "Payment creation failed: #{e.message}")
           render :new, status: :unprocessable_entity
           return
@@ -132,7 +116,6 @@ class EnrollmentsController < ApplicationController
 
       redirect_to @enrollment, notice: "Successfully enrolled!"
     else
-      Rails.logger.error "Enrollment validation failed: #{@enrollment.errors.full_messages}"
       render :new, status: :unprocessable_entity
     end
   end

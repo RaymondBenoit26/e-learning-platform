@@ -157,9 +157,8 @@ class Enrollment < ApplicationRecord
     free? || (enrollable.respond_to?(:price) && enrollable.price&.zero?)
   end
 
-  # Get the total amount paid for this enrollment
   def total_paid
-    payments.sum(:amount)
+    payments.completed.sum(:amount)
   end
 
   # Check if payment is required for this enrollment
@@ -190,27 +189,22 @@ class Enrollment < ApplicationRecord
     end
   end
 
-  # Returns the course name if enrollable is a Course, otherwise nil
   def course_name
     enrollable.is_a?(Course) ? enrollable.name : nil
   end
 
-  # Get the latest payment for this enrollment
   def latest_payment
     payments.order(created_at: :desc).first
   end
 
-  # Check if payment is pending
   def payment_pending?
     latest_payment&.pending?
   end
 
-  # Check if payment is completed
   def payment_completed?
     latest_payment&.completed?
   end
 
-  # Check if payment failed
   def payment_failed?
     latest_payment&.failed?
   end

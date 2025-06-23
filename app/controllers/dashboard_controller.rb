@@ -47,7 +47,6 @@ class DashboardController < ApplicationController
   end
 
   def management_dashboard
-    Rails.logger.info "Dashboard: Processing management dashboard"
     @total_students = @school.users.students.count
     @total_instructors = @school.users.instructors.count
     @total_courses = @school.courses.count

@@ -19,7 +19,6 @@ class LicensePaymentProcessingJob < ApplicationJob
                         10 # Immediate for other methods
     end
 
-    Rails.logger.info "Payment processing will take #{processing_delay} seconds"
     sleep(processing_delay) if Rails.env.development? # Only sleep in development
 
     # Simulate payment success/failure rates
@@ -38,21 +37,11 @@ class LicensePaymentProcessingJob < ApplicationJob
 
     ActiveRecord::Base.transaction do
       if payment_successful
-        # Update payment status to completed
         payment.update!(status: :completed)
-
-        # Update license access status to active
         license_access.update!(status: :active)
-
-        Rails.logger.info "Payment successful for License Access #{license_access_id}. License activated and enrollment created."
       else
-        # Update payment status to failed
         payment.update!(status: :failed)
-
-        # Update license access status to cancelled
         license_access.update!(status: :cancelled)
-
-        Rails.logger.error "Payment failed for License Access #{license_access_id}. License access cancelled."
       end
     end
 
@@ -60,8 +49,6 @@ class LicensePaymentProcessingJob < ApplicationJob
     Rails.logger.error "Record not found in LicensePaymentProcessingJob: #{e.message}"
   rescue StandardError => e
     Rails.logger.error "Error processing license payment: #{e.message}"
-    Rails.logger.error e.backtrace.join("\n")
-
     # On error, mark payment as failed and cancel license access
     begin
       payment&.update(status: :failed)
