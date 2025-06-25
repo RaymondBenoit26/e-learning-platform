@@ -23,7 +23,7 @@ class DashboardController < ApplicationController
     @recent_enrollments = current_user.course_enrollments
                                   .order("enrollments.created_at DESC")
                                   .limit(5)
-    @term_enrollments = current_user.term_enrollments.includes(:payable).limit(3)
+    @term_enrollments = current_user.term_enrollments.includes(:enrollable).limit(3)
     @available_licenses = License.where(licensable_type: "Term")
                                  .joins("INNER JOIN terms ON terms.id = licenses.licensable_id")
                                  .where(terms: { school_id: @school.id })
@@ -41,7 +41,7 @@ class DashboardController < ApplicationController
                                   .limit(5)
     term_ids = @assigned_courses.joins(:term).pluck("terms.id").uniq
     @term_enrollments = Enrollment.term_enrollments.where(enrollable_id: term_ids)
-                                      .includes(:student, :payable)
+                                      .includes(:student, :enrollable)
                                       .order(created_at: :desc)
                                       .limit(5)
   end
@@ -62,7 +62,7 @@ class DashboardController < ApplicationController
                                       .limit(5)
     @recent_term_enrollments = Enrollment.term_enrollments.joins("INNER JOIN terms ON terms.id = enrollments.enrollable_id")
                                                 .where(terms: { school_id: @school.id })
-                                                .includes(:student, :payable)
+                                                .includes(:student, :enrollable)
                                                 .order(created_at: :desc)
                                                 .limit(5)
     @active_licenses = License.where(licensable_type: "Term")
@@ -81,7 +81,7 @@ class DashboardController < ApplicationController
     @recent_enrollments = Enrollment.course_enrollments.includes(:student)
                                   .order(created_at: :desc)
                                   .limit(5)
-    @recent_term_enrollments = Enrollment.term_enrollments.includes(:student, :payable)
+    @recent_term_enrollments = Enrollment.term_enrollments.includes(:student, :enrollable)
                                                 .order(created_at: :desc)
                                                 .limit(5)
     @active_licenses = License.active.limit(5)

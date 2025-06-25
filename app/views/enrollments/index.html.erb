@@ -25,7 +25,7 @@
     <div class="col-md-3">
       <div class="card bg-success text-white">
         <div class="card-body text-center">
-          <h3><%= @enrollments.course_enrollments.joins("INNER JOIN courses ON courses.id = enrollments.enrollable_id").distinct.count('courses.id') %></h3>
+          <h3><%= @enrollments.course_enrollments.distinct.count %></h3>
           <p class="mb-0">Active Courses</p>
         </div>
       </div>
@@ -33,7 +33,7 @@
     <div class="col-md-3">
       <div class="card bg-info text-white">
         <div class="card-body text-center">
-          <h3><%= @enrollments.joins(:student).distinct.count('users.id') %></h3>
+          <h3><%= @enrollments.distinct.count('enrollments.student_id') %></h3>
           <p class="mb-0">Unique Students</p>
         </div>
       </div>
@@ -232,12 +232,26 @@
                 
                 <% unless current_user.student? %>
                   <td>
-                    <% if enrollment.payable %>
-                      <span class="badge bg-info">Paid</span><br>
-                      <small class="text-muted">$<%= enrollment.payable.try(:price) || '0' %></small>
-                    <% else %>
+                    <% if enrollment.payments.completed.any? %>
+                      <span class="badge bg-success">Paid</span><br>
+                      <small class="text-muted">$<%= enrollment.payments.completed.sum(:amount) %></small>
+                    <% elsif enrollment.payments.pending.any? %>
+                      <span class="badge bg-warning">Payment Pending</span><br>
+                      <small class="text-muted">$<%= enrollment.payments.pending.sum(:amount) %></small>
+                    <% elsif enrollment.free? %>
                       <span class="badge bg-success">Free</span><br>
                       <small class="text-muted">$0</small>
+                    <% else %>
+                      <span class="badge bg-secondary">No Payment</span><br>
+                      <small class="text-muted">
+                        <% if enrollment.enrollable.is_a?(Course) %>
+                          $<%= enrollment.enrollable.price || 0 %>
+                        <% elsif enrollment.enrollable.is_a?(Term) %>
+                          $<%= enrollment.enrollable.total_course_price || 0 %>
+                        <% else %>
+                          $0
+                        <% end %>
+                      </small>
                     <% end %>
                   </td>
                 <% end %>

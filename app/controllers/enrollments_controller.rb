@@ -81,7 +81,15 @@ class EnrollmentsController < ApplicationController
       course_ids = current_user.assigned_courses.pluck(:id)
       redirect_to enrollments_path unless @enrollment.course_enrollment? && course_ids.include?(@enrollment.enrollable_id)
     when "management"
-      redirect_to enrollments_path unless @enrollment.course_enrollment? && @enrollment.course.school == current_school
+      # Check if management user has access to this enrollment (either course or term in their school)
+      has_access = if @enrollment.course_enrollment?
+        @enrollment.course.school == current_school
+      elsif @enrollment.term_enrollment?
+        @enrollment.term.school == current_school
+      else
+        false
+      end
+      redirect_to enrollments_path unless has_access
     end
   end
 
@@ -185,7 +193,7 @@ class EnrollmentsController < ApplicationController
       payment.create_course_breakdown(enrollment.enrollable)
     end
 
-    PaymentProcessingJob.set(wait: 1.minute).perform_later(payment.id)
+    # Note: PaymentProcessingJob is automatically scheduled via Payment model's after_create callback
   end
 
   def build_base_query_for_user
@@ -198,10 +206,15 @@ class EnrollmentsController < ApplicationController
                     .where(enrollable_id: course_ids)
                     .includes(:student)
     when "management"
-      base_query = Enrollment.course_enrollments
-                    .joins("INNER JOIN courses ON courses.id = enrollments.enrollable_id")
-                    .where(courses: { school_id: current_school.id })
-                    .includes(:student)
+      # Management users can see both course and term enrollments in their school
+      base_query = Enrollment.joins(
+        "LEFT JOIN courses ON courses.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Course'
+         LEFT JOIN terms ON terms.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Term'"
+      ).where(
+        "(enrollments.enrollable_type = 'Course' AND courses.school_id = ?) OR
+         (enrollments.enrollable_type = 'Term' AND terms.school_id = ?)",
+        current_school.id, current_school.id
+      ).includes(:student)
     end
     base_query
   end
@@ -212,17 +225,28 @@ class EnrollmentsController < ApplicationController
 
   def apply_search_term_filter(base_query)
     search_term = "%#{params[:search_term]}%"
-    base_query.joins(
-      "LEFT JOIN courses ON courses.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Course'
-       LEFT JOIN terms ON terms.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Term'"
-    ).where("(enrollments.enrollable_type = 'Course' AND courses.name ILIKE ?) OR (enrollments.enrollable_type = 'Term' AND terms.name ILIKE ?)", search_term, search_term)
+
+    # Check if joins already exist (for management users)
+    sql_string = base_query.to_sql
+    already_has_joins = sql_string.include?("LEFT JOIN courses") && sql_string.include?("LEFT JOIN terms")
+
+    if already_has_joins
+      # Joins already exist, just add the where clause
+      base_query.where("(enrollments.enrollable_type = 'Course' AND courses.name ILIKE ?) OR (enrollments.enrollable_type = 'Term' AND terms.name ILIKE ?)", search_term, search_term)
+    else
+      # Need to add the joins
+      base_query.joins(
+        "LEFT JOIN courses ON courses.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Course'
+         LEFT JOIN terms ON terms.id = enrollments.enrollable_id AND enrollments.enrollable_type = 'Term'"
+      ).where("(enrollments.enrollable_type = 'Course' AND courses.name ILIKE ?) OR (enrollments.enrollable_type = 'Term' AND terms.name ILIKE ?)", search_term, search_term)
+    end
   end
 
   def set_enrollment_counts
     if current_user.student?
-      @term_enrollment_count = current_user.enrollments.term_enrollments.count
-      @course_enrollment_count = current_user.enrollments.course_enrollments.count
-      @total_enrollment_count = current_user.enrollments.count
+      @term_enrollment_count = current_user.term_enrollments.count
+      @course_enrollment_count = current_user.course_enrollments.count
+      @total_enrollment_count = @term_enrollment_count + @course_enrollment_count
     end
   end
 end

@@ -136,8 +136,13 @@
                     <%= form.select :payment_method, 
                         options_for_select([
                           ['Credit Card', 'credit_card'],
+                          ['Debit Card', 'debit_card'],
                           ['Bank Transfer', 'bank_transfer'],
-                          ['Cash', 'cash']
+                          ['PayPal', 'paypal'],
+                          ['Stripe', 'stripe'],
+                          ['Cash', 'cash'],
+                          ['Scholarship', 'scholarship'],
+                          ['Waived', 'waived']
                         ]), 
                         { prompt: "Select payment method..." }, 
                         { class: "form-select" } %>
@@ -171,7 +176,7 @@
                 
                 <% if @enrollable.licenses.available.any? %>
                   <div class="form-check mb-3">
-                    <%= form.radio_button :enrollment_type, "license_based", class: "form-check-input", checked: true, data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.radio_button :enrollment_type, "license_based", class: "form-check-input", checked: !@enrollable.price&.positive?, data: { action: "change->enrollment#toggleEnrollmentType" } %>
                     <%= form.label :enrollment_type_license_based, "License-based enrollment", class: "form-check-label" %>
                     <small class="text-muted d-block">
                       Use an available license to enroll in this course.
@@ -192,7 +197,7 @@
                 
                 <% if @enrollable.price&.positive? %>
                   <div class="form-check mb-3">
-                    <%= form.radio_button :enrollment_type, "direct_payment", class: "form-check-input", data: { action: "change->enrollment#toggleEnrollmentType" } %>
+                    <%= form.radio_button :enrollment_type, "direct_payment", class: "form-check-input", checked: @enrollable.licenses.available.empty?, data: { action: "change->enrollment#toggleEnrollmentType" } %>
                     <%= form.label :enrollment_type_direct_payment, "Direct payment", class: "form-check-label" %>
                     <small class="text-muted d-block">
                       Pay directly for this course.
@@ -204,8 +209,13 @@
                       <%= form.select :payment_method, 
                           options_for_select([
                             ['Credit Card', 'credit_card'],
+                            ['Debit Card', 'debit_card'],
                             ['Bank Transfer', 'bank_transfer'],
-                            ['Cash', 'cash']
+                            ['PayPal', 'paypal'],
+                            ['Stripe', 'stripe'],
+                            ['Cash', 'cash'],
+                            ['Scholarship', 'scholarship'],
+                            ['Waived', 'waived']
                           ]), 
                           { prompt: "Select payment method..." }, 
                           { class: "form-select" } %>
@@ -259,32 +269,35 @@ document.addEventListener('DOMContentLoaded', function() {
   const licenses = <%= raw @enrollable.licenses.available.map { |l| { id: l.id, name: l.name, price: l.price, available_seats: l.available_seats, expires_at: l.expires_at } }.to_json %>;
   
   function toggleEnrollmentType() {
-    const selectedType = document.querySelector('input[name="enrollment[enrollment_type]"]:checked').value;
+    const selectedTypeElement = document.querySelector('input[name="enrollment[enrollment_type]"]:checked');
+    if (!selectedTypeElement) return; // Exit if no radio button is selected
+    
+    const selectedType = selectedTypeElement.value;
     const licenseSelect = document.querySelector('select[name="enrollment[license_id]"]');
     const paymentMethodSelect = document.querySelector('select[name="enrollment[payment_method]"]');
     
     if (selectedType === 'license_based') {
-      licenseSelection.style.display = 'block';
-      paymentMethodSelection.style.display = 'none';
+      if (licenseSelection) licenseSelection.style.display = 'block';
+      if (paymentMethodSelection) paymentMethodSelection.style.display = 'none';
       
       // Set required attributes
       if (licenseSelect) licenseSelect.required = true;
       if (paymentMethodSelect) paymentMethodSelect.required = false;
     } else if (selectedType === 'direct_payment') {
-      licenseSelection.style.display = 'none';
-      paymentMethodSelection.style.display = 'block';
+      if (licenseSelection) licenseSelection.style.display = 'none';
+      if (paymentMethodSelection) paymentMethodSelection.style.display = 'block';
       <% if @enrollable.is_a?(Term) %>
-        paymentAmount.textContent = '$<%= @enrollable.adjusted_total_course_price_for(current_user) %>';
+        if (paymentAmount) paymentAmount.textContent = '$<%= @enrollable.adjusted_total_course_price_for(current_user) %>';
       <% else %>
-        paymentAmount.textContent = '$<%= @enrollable.price || 0 %>';
+        if (paymentAmount) paymentAmount.textContent = '$<%= @enrollable.price || 0 %>';
       <% end %>
       
       // Set required attributes
       if (licenseSelect) licenseSelect.required = false;
       if (paymentMethodSelect) paymentMethodSelect.required = true;
     } else {
-      licenseSelection.style.display = 'none';
-      paymentMethodSelection.style.display = 'none';
+      if (licenseSelection) licenseSelection.style.display = 'none';
+      if (paymentMethodSelection) paymentMethodSelection.style.display = 'none';
       
       // Remove required attributes for free enrollment
       if (licenseSelect) licenseSelect.required = false;

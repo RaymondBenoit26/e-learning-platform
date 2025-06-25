@@ -49,6 +49,12 @@ Rails.application.routes.draw do
         resources :course_contents, except: [ :index ]
       end
 
+      resources :licenses do
+        member do
+          post :purchase
+        end
+      end
+
       # Course-specific actions
       member do
         post :enroll
