@@ -16,17 +16,32 @@ class LicensesController < ApplicationController
   end
 
   def new
-    @license = @terms.find(params[:term_id]).licenses.build if params[:term_id]
+    if params[:term_id]
+      @licensable = @terms.find(params[:term_id])
+    elsif params[:course_id]
+      @licensable = Course.find(params[:course_id])
+    end
+
+    @license = @licensable.licenses.build if @licensable
     @license ||= License.new
   end
 
   def create
-    @term = @terms.find(license_params[:term_id])
-    @license = @term.licenses.build(license_params.except(:term_id))
-    if @license.save
-      redirect_to [ @school, @term, @license ], notice: "License was successfully created."
+    if params[:license][:term_id].present?
+      @licensable = @terms.find(params[:license][:term_id])
+      @license = @licensable.licenses.build(license_params.except(:term_id, :course_id))
+    elsif params[:license][:course_id].present?
+      @licensable = Course.find(params[:license][:course_id])
+      @license = @licensable.licenses.build(license_params.except(:term_id, :course_id))
     else
-      @terms = @school.terms.order(:start_date)
+      redirect_to licenses_path, alert: "Please select a term or course for the license."
+      return
+    end
+
+    if @license.save
+      redirect_to [ @licensable.school, @licensable, @license ], notice: "License was successfully created."
+    else
+      @terms = @school.terms.order(:start_date) if @licensable.is_a?(Term)
       render :new, status: :unprocessable_entity
     end
   end
@@ -109,15 +124,28 @@ class LicensesController < ApplicationController
     if params[:term_id]
       @term = @school.terms.find(params[:term_id])
       @license = @term.licenses.find(params[:id])
+    elsif params[:course_id]
+      @course = @school.courses.find(params[:course_id])
+      @license = @course.licenses.find(params[:id])
     elsif current_user.super_admin?
       # For super admin, find license directly without school context
       @license = License.find(params[:id])
       @term = @license.licensable if @license.licensable_type == "Term"
+      @course = @license.licensable if @license.licensable_type == "Course"
     else
+      # Try to find license in terms first, then courses
       @license = License.where(licensable_type: "Term")
                         .joins("INNER JOIN terms ON terms.id = licenses.licensable_id")
-                        .where(terms: { school_id: @school.id }).find(params[:id])
-      @term = @license.licensable if @license.licensable_type == "Term"
+                        .where(terms: { school_id: @school.id }).find_by(id: params[:id])
+
+      unless @license
+        @license = License.where(licensable_type: "Course")
+                          .joins("INNER JOIN courses ON courses.id = licenses.licensable_id")
+                          .where(courses: { school_id: @school.id }).find(params[:id])
+        @course = @license.licensable if @license.licensable_type == "Course"
+      else
+        @term = @license.licensable if @license.licensable_type == "Term"
+      end
     end
   end
 
@@ -126,7 +154,7 @@ class LicensesController < ApplicationController
   end
 
   def license_params
-    params.require(:license).permit(:name, :description, :price, :max_seats, :license_type, :expires_at, :term_id)
+    params.require(:license).permit(:name, :description, :price, :max_seats, :license_type, :expires_at, :term_id, :course_id)
   end
 
   def build_ransack_query

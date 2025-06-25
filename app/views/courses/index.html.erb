@@ -108,10 +108,8 @@
                 <% if @enrolled_course_ids&.include?(course.id) %>
                   <span class="text-success"><i class="fas fa-check"></i> Enrolled</span>
                 <% else %>
-                  <%= link_to "Enroll", enroll_course_path(course), 
-                      method: :post, 
-                      class: "btn btn-success btn-sm",
-                      data: { confirm: "Are you sure you want to enroll in this course?" } %>
+                  <%= link_to "Enroll", new_school_course_enrollment_path(course.school, course), 
+                      class: "btn btn-success btn-sm" %>
                 <% end %>
               <% elsif current_user.management? || current_user.instructor? %>
                 <%= link_to "Edit", edit_school_course_path(course.school, course), 

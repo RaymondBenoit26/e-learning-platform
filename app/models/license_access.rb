@@ -84,4 +84,8 @@ class LicenseAccess < ApplicationRecord
       Rails.logger.error "Failed to create enrollment for license access #{id}: #{new_enrollment.errors.full_messages.join(', ')}"
     end
   end
+
+  def activate
+    update!(status: :active)
+  end
 end

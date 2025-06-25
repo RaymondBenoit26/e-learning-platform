@@ -196,7 +196,6 @@ class Payment < ApplicationRecord
   def enqueue_processing_job
     # All payments now use the unified PaymentProcessingJob
     PaymentProcessingJob.set(wait: 1.minute).perform_later(self.id)
-    Rails.logger.info "Scheduled payment processing for Payment #{id} (#{payable_type} #{payable_id})"
   end
 
   def saved_change_to_status_to_completed?
@@ -204,33 +203,7 @@ class Payment < ApplicationRecord
   end
 
   def activate_payable_on_completion
-    Rails.logger.info "Payment #{id} completed, activating #{payable_type} #{payable_id}"
-
-    case payable_type
-    when "License"
-      activate_license_access
-    when "Enrollment"
-      activate_enrollment
-    else
-      Rails.logger.warn "Unknown payable type: #{payable_type}"
-    end
+    payable.activate
   end
-
-  def activate_license_access
-    # Find the license access for this payment
-    license_access = LicenseAccess.find_by(student: student, license: payable)
-
-    if license_access
-      license_access.update!(status: :active)
-      Rails.logger.info "Activated license access #{license_access.id} for payment #{id}"
-    else
-      Rails.logger.error "License access not found for payment #{id} (License #{payable_id}, Student #{student_id})"
-    end
-  end
-
-  def activate_enrollment
-    # For enrollment payments, activate the enrollment directly
-    payable.update!(status: :active)
-    Rails.logger.info "Activated enrollment #{payable_id} for payment #{id}"
-  end
+  
 end

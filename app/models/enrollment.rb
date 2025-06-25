@@ -221,4 +221,8 @@ class Enrollment < ApplicationRecord
   def payment_failed?
     latest_payment&.failed?
   end
+
+  def activate
+    update!(status: :active)
+  end
 end

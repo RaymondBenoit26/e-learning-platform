@@ -4,6 +4,7 @@ class Course < ApplicationRecord
 
   has_many :chapters, dependent: :destroy
   has_many :course_contents, dependent: :destroy
+  has_many :payments, as: :payable, dependent: :destroy
   has_many :enrollments, as: :enrollable, dependent: :destroy
   has_many :students, through: :enrollments, class_name: "User"
   has_many :course_assignments, dependent: :destroy
